@@ -8,7 +8,8 @@
         "GitHub.copilot",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "orta.vscode-jest"
+        "orta.vscode-jest",
+        "github.vscode-github-actions"
       ]
     }
   }
