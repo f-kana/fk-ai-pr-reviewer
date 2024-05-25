@@ -1,5 +1,3 @@
-apt-get update
-apt-get install -y make git nano bash curl wget
 echo 'source /usr/share/bash-completion/completions/git' >> ~/.bashrc
 
 cd /usr/share/bash-completion/completions
@@ -18,4 +16,3 @@ cp /mnt/hostosuser_homedir/.ssh/id_rsa /root/.ssh/
 echo 'alias gti=git' >> ~/.bashrc
 
 cd ~
-. ~/.bashrc
