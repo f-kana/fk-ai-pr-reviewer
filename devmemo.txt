@@ -1,0 +1,2 @@
+2024/5/25 jest.config.jsonにCopilotのすすめでglobalを足したが、本当に必要かは不明なのであとで確認する(ToDo)
+
