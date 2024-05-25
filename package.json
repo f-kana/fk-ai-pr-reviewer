@@ -28,7 +28,7 @@
     "@actions/core": "^1.10.1",
     "@actions/github": "^6.0.0",
     "@dqbd/tiktoken": "^1.0.15",
-    "@octokit/action": "^6.0.4",
+    "@octokit/action": "^7.0.0",
     "@octokit/plugin-retry": "^4.1.3",
     "@octokit/plugin-throttling": "^6.1.0",
     "minimatch": "^9.0.1",
