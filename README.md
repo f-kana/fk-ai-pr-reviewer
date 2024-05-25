@@ -1,5 +1,7 @@
-# CodeRabbit Pro
+# FK AI PR Reviwer (based on CodeRabbit Pro)
+A fork from CodeRabbit, with additional features (work in-porogress.)
 
+# Original README: CodeRabbit Pro
 This is an old version of [CodeRabbit](http://coderabbit.ai) and is now in the maintenance mode.
 We recommend installing the Pro version from [CodeRabbit](http://coderabbit.ai). The Pro version is a total redesign and offers significantly better reviews that learn from your usage and improve over time. CodeRabbit Pro is free for open source projects. 
 
@@ -15,7 +17,7 @@ We recommend installing the Pro version from [CodeRabbit](http://coderabbit.ai).
 CodeRabbit `ai-pr-reviewer` is an AI-based code reviewer and summarizer for
 GitHub pull requests using OpenAI's `gpt-3.5-turbo` and `gpt-4` models. It is
 designed to be used as a GitHub Action and can be configured to run on every
-pull request and review comments
+pull request and review comments.
 
 ## Reviewer Features:
 
