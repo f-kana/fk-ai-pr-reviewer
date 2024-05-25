@@ -8,7 +8,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "target": "ESNext",
-    "module": "CommonJS",
+    "module": "ESNext",
     "outDir": "./lib",
     "rootDir": "./src",
     "strict": true,
