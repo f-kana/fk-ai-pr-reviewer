@@ -3,11 +3,11 @@
 {
     "name": "devcontainer",
     "build": {
-        "dockerfile": "Dockerfile"
-    },
-    "args": {
-        "name": "fk-ai-pr-reviewer",
-        "hostname": "fk-ai-pr-reviewer"
+        "dockerfile": "Dockerfile",
+        "args": {
+            "name": "fk-ai-pr-reviewer-devcontainer",
+            "hostname": "fk-ai-pr-reviewer-devcontainer"
+        }
     },
     //"runArgs": ["--platform=linux/amd64"],
     "postCreateCommand": "sh .devcontainer/postCreateContainer.sh",

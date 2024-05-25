@@ -18,4 +18,4 @@ cp /mnt/hostosuser_homedir/.ssh/id_rsa /root/.ssh/
 echo 'alias gti=git' >> ~/.bashrc
 
 cd ~
-source ~/.bashrc
+. ~/.bashrc
