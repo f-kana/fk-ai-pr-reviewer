@@ -1,3 +1,5 @@
+/// GitHub APIの設定を行ったoctokitオブジェクトをexportしている。
+
 import {getInput, warning} from '@actions/core'
 import {Octokit} from '@octokit/action'
 import {retry} from '@octokit/plugin-retry'

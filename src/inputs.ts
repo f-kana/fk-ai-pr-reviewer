@@ -24,7 +24,8 @@ export class Inputs {
     patches = '',
     diff = 'no diff',
     commentChain = 'no other comments on this patch',
-    comment = 'no comment provided'
+    comment = 'no comment provided',
+    // gh_issues = 'no issue is associated with this PR',
   ) {
     this.systemMessage = systemMessage
     this.title = title
@@ -38,6 +39,7 @@ export class Inputs {
     this.diff = diff
     this.commentChain = commentChain
     this.comment = comment
+    // this.gh_issues = gh_issues
   }
 
   clone(): Inputs {
@@ -54,9 +56,12 @@ export class Inputs {
       this.diff,
       this.commentChain,
       this.comment
+      // this.gh_issues
     )
   }
 
+  /// content: 「$system_message」 などのプレースホルダを含んだ文字列
+  ///    Promptsクラスのプロパティが来ることが多い。
   render(content: string): string {
     if (!content) {
       return ''
@@ -97,6 +102,9 @@ export class Inputs {
     if (this.comment) {
       content = content.replace('$comment', this.comment)
     }
+    // if (this.gh_issues) {
+    //   content = content.replace('$gh_issues', this.gh_issues)
+    // }
     return content
   }
 }
