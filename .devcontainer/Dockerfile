@@ -3,4 +3,4 @@
 FROM node:20
 
 RUN apt-get update
-RUN apt-get install -y make git nano bash curl wget
+RUN apt-get install -y make git nano bash curl wget less

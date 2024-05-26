@@ -1,3 +1,7 @@
+## ==== FK customed .gitignore ====
+tmp/
+
+## ==== Original .gitignore ====
 # Dependency directory
 node_modules
 
