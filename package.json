@@ -1,11 +1,11 @@
 {
-  "name": "openai-pr-reviewer",
+  "name": "fk-ai-pr-reviewer",
   "version": "0.0.0",
   "private": true,
-  "description": "OpenAI-based PR Reviewer and Summarizer.",
+  "description": "Forked from CodeRabbit, OpenAI-based PR Reviewer and Summarizer.",
   "main": "lib/main.js",
   "scripts": {
-    "build": "cp node_modules/@dqbd/tiktoken/tiktoken_bg.wasm dist/tiktoken_bg.wasm && tsc",
+    "build": "mkdir -p dist lib && cp node_modules/@dqbd/tiktoken/tiktoken_bg.wasm dist/tiktoken_bg.wasm && tsc",
     "package": "ncc build --license licenses.txt",
     "act": "npm run build && npm run package && ./bin/act pull_request_target --secret-file .secrets",
     "format": "prettier --write '**/*.ts'",
