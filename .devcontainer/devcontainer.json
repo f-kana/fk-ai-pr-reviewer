@@ -1,5 +1,26 @@
+// Apple Silicon & Podmanを使っているため、通常のDevContainerとは異なる設定を使用。
+// 元はコメントアウトした通り。通常環境やGitHub Codespacesであれば元通りのでOK。
 {
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {
-  }
+    "name": "devcontainer",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "name": "fk-ai-pr-reviewer-devcontainer",
+            "hostname": "fk-ai-pr-reviewer-devcontainer"
+        }
+    },
+    //"runArgs": ["--platform=linux/amd64"],
+    "postCreateCommand": "sh .devcontainer/postCreateContainer.sh",
+    "workspaceMount": "source=/mnt/Users/fkanayam/work/fk-ai-pr-reviewer,target=/app,type=bind,consistency=cached",
+    "mounts": [
+        "source=/mnt/Users/fkanayam,target=/mnt/hostosuser_homedir,type=bind,consistency=cached"
+    ],
+    "workspaceFolder": "/app",
+    "remoteUser": "root"
 }
+
+// {
+// 	"image": "mcr.microsoft.com/devcontainers/universal:2",
+// 	"features": {
+// 	}
+// }
