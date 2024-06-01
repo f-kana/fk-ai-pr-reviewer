@@ -15,6 +15,11 @@
     "noImplicitAny": true,
     "esModuleInterop": true
   },
+  "ts-node": {
+    "compilerOptions": {
+      "isolatedModules": false
+    }
+  },
   "exclude": [
     "dist",
     "lib",
