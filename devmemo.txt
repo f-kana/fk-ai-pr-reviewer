@@ -1,5 +1,6 @@
 2024/5/25 jest.config.jsonにCopilotのすすめでglobalを足したが、本当に必要かは不明なのであとで確認する(ToDo)
 
+# OpenAI
 curl https://api.openai.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
@@ -8,3 +9,7 @@ curl https://api.openai.com/v1/chat/completions \
      "messages": [{"role": "user", "content": "Say this is a test!"}],
      "temperature": 0.7
    }'
+
+# GitHub
+GH_USER=hoge-user
+curl https://api.github.com/repos/${GH_USER}/sample-ai-reviewed/issues/1

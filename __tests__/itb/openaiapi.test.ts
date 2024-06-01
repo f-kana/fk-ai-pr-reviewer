@@ -9,7 +9,7 @@ describe('External Integration Tests (ITb) with OpenAI API', () => {
   if (!process.env.RUN_OPENAI_API_TESTS) {
     it.skip('Skip OpenAI API test.', () => {})
   } else {
-    it('should run expensive API call', async () => {
+    it('Just confirm OpenAI API call', async () => {
       const options = new OptionBuilderWithDefaults().build()
       const openaiOptions = new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
       const apiWrapper = new ChatGptApiWrapperBuilder(options, openaiOptions).build()

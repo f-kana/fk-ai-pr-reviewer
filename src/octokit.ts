@@ -5,6 +5,10 @@ import {Octokit} from '@octokit/action'
 import {retry} from '@octokit/plugin-retry'
 import {throttling} from '@octokit/plugin-throttling'
 
+import dotenv from 'dotenv'
+if (!process.env.GITHUB_TOKEN) {
+  dotenv.config({override: false}) // process.env.GITHUB_TOKEN will be loaded from .env when Local Dev Env
+}
 const token = getInput('token') || process.env.GITHUB_TOKEN
 
 const RetryAndThrottlingOctokit = Octokit.plugin(throttling, retry)
