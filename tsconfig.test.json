@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["dist", "lib", "node_modules"]
+  "exclude": ["dist", "lib", "node_modules"],
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true
+  },
 }

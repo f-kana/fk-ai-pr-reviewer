@@ -15,5 +15,12 @@
     "noImplicitAny": true,
     "esModuleInterop": true
   },
-  "exclude": ["dist", "lib", "node_modules", "tmp", "**/*.test.ts"]
+  "exclude": [
+    "dist",
+    "lib",
+    "node_modules",
+    "tmp",
+    "**/*.test.ts",
+    "jest.config.js"
+  ]
 }
