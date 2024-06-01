@@ -1,3 +1,8 @@
+/**
+ * PRに追加されたコメントに対して発動するhandleReviewComment関数を中心とする。
+ * コメント１件に対して返答コメントを生成する
+ */
+
 import {info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'

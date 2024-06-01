@@ -1,3 +1,8 @@
+/**
+ * PR作成時に発動するcodeReview関数を中心とする。
+ * PR全体に対してレビューコメントを生成する
+ */
+
 import {error, info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
@@ -34,27 +39,21 @@ export const codeReview = async (
 
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
   const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit)
-
-  if (
-    context.eventName !== 'pull_request' &&
-    context.eventName !== 'pull_request_target'
-  ) {
-    warning(
-      `Skipped: current event is ${context.eventName}, only support pull_request event`
-    )
-    return
+  
+  // Eventが有効なPull Requestかどうかを確認する
+  if (context.eventName !== 'pull_request' && context.eventName !== 'pull_request_target') {
+    warning(`Skipped: current event is ${context.eventName}, only support pull_request event`)
+    return;
   }
   if (context.payload.pull_request == null) {
     warning('Skipped: context.payload.pull_request is null')
-    return
+    return;
   }
-
+  
   const inputs: Inputs = new Inputs()
   inputs.title = context.payload.pull_request.title
   if (context.payload.pull_request.body != null) {
-    inputs.description = commenter.getDescription(
-      context.payload.pull_request.body
-    )
+    inputs.description = commenter.getDescription(context.payload.pull_request.body)
   }
 
   // if the description contains ignore_keyword, skip
@@ -142,34 +141,20 @@ export const codeReview = async (
     return
   }
 
-  // skip files if they are filtered out
-  const filterSelectedFiles = []
-  const filterIgnoredFiles = []
-  for (const file of files) {
-    if (!options.checkPath(file.filename)) {
-      info(`skip for excluded path: ${file.filename}`)
-      filterIgnoredFiles.push(file)
-    } else {
-      filterSelectedFiles.push(file)
-    }
-  }
-
+  const { filterSelectedFiles, filterIgnoredFiles } = _filterFiles(files, options);
   if (filterSelectedFiles.length === 0) {
     warning('Skipped: filterSelectedFiles is null')
     return
   }
 
   const commits = incrementalDiff.data.commits
-
   if (commits.length === 0) {
     warning('Skipped: commits is null')
     return
   }
 
   // find hunks to review
-  const filteredFiles: Array<
-    [string, string, string, Array<[number, number, string]>] | null
-  > = await Promise.all(
+  const filteredFiles: Array<[string, string, string, Array<[number, number, string]>] | null> = await Promise.all(
     filterSelectedFiles.map(file =>
       githubConcurrencyLimit(async () => {
         // retrieve file contents
@@ -187,29 +172,16 @@ export const codeReview = async (
           })
           if (contents.data != null) {
             if (!Array.isArray(contents.data)) {
-              if (
-                contents.data.type === 'file' &&
-                contents.data.content != null
-              ) {
-                fileContent = Buffer.from(
-                  contents.data.content,
-                  'base64'
-                ).toString()
+              if (contents.data.type === 'file' && contents.data.content != null) {
+                fileContent = Buffer.from(contents.data.content, 'base64').toString()
               }
             }
           }
         } catch (e: any) {
-          warning(
-            `Failed to get file contents: ${
-              e as string
-            }. This is OK if it's a new file.`
-          )
+          warning(`Failed to get file contents: ${e as string}. This is OK if it's a new file.`)
         }
 
-        let fileDiff = ''
-        if (file.patch != null) {
-          fileDiff = file.patch
-        }
+        const fileDiff = file.patch || '';
 
         const patches: Array<[number, number, string]> = []
         for (const patch of splitPatch(file.patch)) {
@@ -217,21 +189,10 @@ export const codeReview = async (
           if (patchLines == null) {
             continue
           }
-          const hunks = parsePatch(patch)
-          if (hunks == null) {
-            continue
+          const hunksStr = _formatHunks(patch);
+          if (hunksStr == null) {
+            continue;
           }
-          const hunksStr = `
----new_hunk---
-\`\`\`
-${hunks.newHunk}
-\`\`\`
-
----old_hunk---
-\`\`\`
-${hunks.oldHunk}
-\`\`\`
-`
           patches.push([
             patchLines.newHunk.startLine,
             patchLines.newHunk.endLine,
@@ -253,47 +214,13 @@ ${hunks.oldHunk}
   )
 
   // Filter out any null results
-  const filesAndChanges = filteredFiles.filter(file => file !== null) as Array<
-    [string, string, string, Array<[number, number, string]>]
-  >
-
+  const filesAndChanges = filteredFiles.filter(file => file !== null) as Array<[string, string, string, Array<[number, number, string]>]>
   if (filesAndChanges.length === 0) {
     error('Skipped: no files to review')
     return
   }
 
-  let statusMsg = `<details>
-<summary>Commits</summary>
-Files that changed from the base of the PR and between ${highestReviewedCommitId} and ${
-    context.payload.pull_request.head.sha
-  } commits.
-</details>
-${
-  filesAndChanges.length > 0
-    ? `
-<details>
-<summary>Files selected (${filesAndChanges.length})</summary>
-
-* ${filesAndChanges
-        .map(([filename, , , patches]) => `${filename} (${patches.length})`)
-        .join('\n* ')}
-</details>
-`
-    : ''
-}
-${
-  filterIgnoredFiles.length > 0
-    ? `
-<details>
-<summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
-
-* ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
-
-</details>
-`
-    : ''
-}
-`
+  let statusMsg = _generateStatusMsg(filesAndChanges, highestReviewedCommitId, context.payload.pull_request.head.sha);
 
   // update the existing comment with in progress status
   const inProgressSummarizeCmt = commenter.addInProgressStatus(
@@ -421,27 +348,7 @@ ${filename}: ${summary}
     info('summarize: nothing obtained from openai')
   }
 
-  if (options.disableReleaseNotes === false) {
-    // final release notes
-    const [releaseNotesResponse] = await heavyBot.chat(
-      prompts.renderSummarizeReleaseNotes(inputs),
-      {}
-    )
-    if (releaseNotesResponse === '') {
-      info('release notes: nothing obtained from openai')
-    } else {
-      let message = '### Summary by CodeRabbit\n\n'
-      message += releaseNotesResponse
-      try {
-        await commenter.updateDescription(
-          context.payload.pull_request.number,
-          message
-        )
-      } catch (e: any) {
-        warning(`release notes: error from github: ${e.message as string}`)
-      }
-    }
-  }
+  await _processReleaseNotes(options, inputs, context, commenter, heavyBot, prompts)
 
   // generate a short summary as well
   const [summarizeShortResponse] = await heavyBot.chat(
@@ -450,56 +357,9 @@ ${filename}: ${summary}
   )
   inputs.shortSummary = summarizeShortResponse
 
-  let summarizeComment = `${summarizeFinalResponse}
-${RAW_SUMMARY_START_TAG}
-${inputs.rawSummary}
-${RAW_SUMMARY_END_TAG}
-${SHORT_SUMMARY_START_TAG}
-${inputs.shortSummary}
-${SHORT_SUMMARY_END_TAG}
+  let summarizeComment = _generateSummarizeComment(summarizeFinalResponse, inputs);
 
----
-
-<details>
-<summary>Uplevel your code reviews with CodeRabbit Pro</summary>
-
-### CodeRabbit Pro
-
-If you like this project, please support us by purchasing the [Pro version](https://coderabbit.ai). The Pro version has advanced context, superior noise reduction and several proprietary improvements compared to the open source version. Moreover, CodeRabbit Pro is free for open source projects.
-
-</details>
-`
-
-  statusMsg += `
-${
-  skippedFiles.length > 0
-    ? `
-<details>
-<summary>Files not processed due to max files limit (${
-        skippedFiles.length
-      })</summary>
-
-* ${skippedFiles.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-${
-  summariesFailed.length > 0
-    ? `
-<details>
-<summary>Files not summarized due to errors (${
-        summariesFailed.length
-      })</summary>
-
-* ${summariesFailed.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-`
+  statusMsg += _appendDetailsToStatusMsg(skippedFiles, summariesFailed);
 
   if (!options.disableReview) {
     const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
@@ -684,32 +544,186 @@ ${commentChain}
     }
 
     await Promise.all(reviewPromises)
+    statusMsg += _generateReviewStatusMsg(reviewsFailed, reviewsSkipped, reviewCount, lgtmCount);
 
-    statusMsg += `
+    // add existing_comment_ids_block with latest head sha
+    summarizeComment += `\n${commenter.addReviewedCommitId(
+      existingCommitIdsBlock,
+      context.payload.pull_request.head.sha
+    )}`
+
+    // post the review
+    await commenter.submitReview(
+      context.payload.pull_request.number,
+      commits[commits.length - 1].sha,
+      statusMsg
+    )
+  }
+
+  // post the final summary comment
+  await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
+}
+
+const _filterFiles = (files: any[], options: any) => {
+  const filterSelectedFiles = []
+  const filterIgnoredFiles = []
+  for (const file of files) {
+    if (!options.checkPath(file.filename)) {
+      info(`skip for excluded path: ${file.filename}`)
+      filterIgnoredFiles.push(file)
+    } else {
+      filterSelectedFiles.push(file)
+    }
+  }
+  return { filterSelectedFiles, filterIgnoredFiles }
+}
+
+const _formatHunks = (patch: string): string | null => {
+  const hunks = parsePatch(patch);
+  if (hunks == null) {
+    return null;
+  }
+  return `
+---new_hunk---
+\`\`\`
+${hunks.newHunk}
+\`\`\`
+
+---old_hunk---
+\`\`\`
+${hunks.oldHunk}
+\`\`\`
+`;
+}
+
+const _generateStatusMsg = (
+  filesAndChanges: Array<[string, string, string, Array<[number, number, string]>]>,
+  highestReviewedCommitId: string,
+  headSha: string
+): string => {
+  return `<details>
+<summary>Commits</summary>
+Files that changed from the base of the PR and between ${highestReviewedCommitId} and ${headSha} commits.
+</details>
 ${
-  reviewsFailed.length > 0
-    ? `<details>
+  filesAndChanges.length > 0
+    ? `
+<details>
+<summary>Files selected (${filesAndChanges.length})</summary>
+
+* ${filesAndChanges
+        .map(([filename, , , patches]) => `${filename} (${patches.length})`)
+        .join('\n* ')}
+</details>`
+    : ''
+}`;
+}
+
+const _processReleaseNotes = async (
+  options: Options,
+  inputs: Inputs,
+  context: any,
+  commenter: Commenter,
+  heavyBot: Bot,
+  prompts: Prompts,
+): Promise<void> => {
+  if (options.disableReleaseNotes === false) {
+    // final release notes
+    const [releaseNotesResponse] = await heavyBot.chat(
+      prompts.renderSummarizeReleaseNotes(inputs),
+      {}
+    )
+    if (releaseNotesResponse === '') {
+      info('release notes: nothing obtained from openai')
+    } else {
+      let message = '### Summary by CodeRabbit\n\n'
+      message += releaseNotesResponse
+      try {
+        await commenter.updateDescription(
+          context.payload.pull_request.number,
+          message
+        )
+      } catch (e: any) {
+        warning(`release notes: error from github: ${e.message as string}`)
+      }
+    }
+  }
+}
+
+const _generateSummarizeComment = (summarizeFinalResponse: string, inputs: Inputs): string => {
+  return `${summarizeFinalResponse}
+${RAW_SUMMARY_START_TAG}
+${inputs.rawSummary}
+${RAW_SUMMARY_END_TAG}
+${SHORT_SUMMARY_START_TAG}
+${inputs.shortSummary}
+${SHORT_SUMMARY_END_TAG}
+
+---
+
+<details>
+<summary>Uplevel your code reviews with CodeRabbit Pro</summary>
+
+### CodeRabbit Pro
+`;
+}
+
+const _appendDetailsToStatusMsg = (skippedFiles: string[], summariesFailed: string[]): string => {
+  return `
+${
+  skippedFiles.length > 0
+    ? `
+<details>
+<summary>Files not processed due to max files limit (${
+        skippedFiles.length
+      })</summary>
+
+* ${skippedFiles.join('\n* ')}
+
+</details>
+`
+    : ''
+}
+${
+  summariesFailed.length > 0
+    ? `
+<details>
+<summary>Files not summarized due to errors (${
+        summariesFailed.length
+      })</summary>
+`
+    : ''
+}`;
+}
+
+const _generateReviewStatusMsg = (
+  reviewsFailed: string[],
+  reviewsSkipped: string[],
+  reviewCount: number,
+  lgtmCount: number
+): string => {
+  let statusMsg = '';
+  if (reviewsFailed.length > 0) {
+    statusMsg += `
+<details>
 <summary>Files not reviewed due to errors (${reviewsFailed.length})</summary>
 
 * ${reviewsFailed.join('\n* ')}
 
 </details>
-`
-    : ''
-}
-${
-  reviewsSkipped.length > 0
-    ? `<details>
-<summary>Files skipped from review due to trivial changes (${
-        reviewsSkipped.length
-      })</summary>
+`;
+  }
+  if (reviewsSkipped.length > 0) {
+    statusMsg += `
+<details>
+<summary>Files skipped from review due to trivial changes (${reviewsSkipped.length})</summary>
 
 * ${reviewsSkipped.join('\n* ')}
 
 </details>
-`
-    : ''
-}
+`;
+  }
+  statusMsg += `
 <details>
 <summary>Review comments generated (${reviewCount + lgtmCount})</summary>
 
@@ -735,23 +749,8 @@ ${
 - Add \`@coderabbitai: ignore\` anywhere in the PR description to pause further reviews from the bot.
 
 </details>
-`
-    // add existing_comment_ids_block with latest head sha
-    summarizeComment += `\n${commenter.addReviewedCommitId(
-      existingCommitIdsBlock,
-      context.payload.pull_request.head.sha
-    )}`
-
-    // post the review
-    await commenter.submitReview(
-      context.payload.pull_request.number,
-      commits[commits.length - 1].sha,
-      statusMsg
-    )
-  }
-
-  // post the final summary comment
-  await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
+`;
+  return statusMsg;
 }
 
 const splitPatch = (patch: string | null | undefined): string[] => {

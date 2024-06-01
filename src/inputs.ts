@@ -1,3 +1,4 @@
+/// １つのPRに関する情報をまとめた構造体
 export class Inputs {
   systemMessage: string
   title: string
@@ -11,6 +12,7 @@ export class Inputs {
   diff: string
   commentChain: string
   comment: string
+  ghIssue?: GhIssue
 
   constructor(
     systemMessage = '',
@@ -24,7 +26,8 @@ export class Inputs {
     patches = '',
     diff = 'no diff',
     commentChain = 'no other comments on this patch',
-    comment = 'no comment provided'
+    comment = 'no comment provided',
+    ghIssue?: GhIssue,
   ) {
     this.systemMessage = systemMessage
     this.title = title
@@ -38,6 +41,7 @@ export class Inputs {
     this.diff = diff
     this.commentChain = commentChain
     this.comment = comment
+    this.ghIssue = ghIssue
   }
 
   clone(): Inputs {
@@ -53,10 +57,17 @@ export class Inputs {
       this.patches,
       this.diff,
       this.commentChain,
-      this.comment
+      this.comment,
+      this.ghIssue?.clone() ?? undefined,
     )
   }
 
+  _subtractGhIssueNumber(title: string, description: string): number {
+    return 0 // dummy return
+  }
+
+  /// content: 「$system_message」 などのプレースホルダを含んだ文字列
+  ///    Promptsクラスのプロパティが来ることが多い。
   render(content: string): string {
     if (!content) {
       return ''
@@ -96,6 +107,50 @@ export class Inputs {
     }
     if (this.comment) {
       content = content.replace('$comment', this.comment)
+    }
+
+    content = this.ghIssue?.render(content) ?? content
+
+    return content
+  }
+}
+
+/// GitHub Issuesの中身
+export class GhIssue {
+  number: number
+  title: string
+  description: string
+
+  constructor(
+    number = 0,
+    title = 'no issue is associated with this PR',
+    description = 'no issue is associated with this PR',
+  ) {
+    this.number = number
+    this.title = title
+    this.description = description
+  }
+
+  clone(): GhIssue {
+    return new GhIssue(
+      this.number,
+      this.title,
+      this.description,
+    )
+  }
+
+  render(content: string): string {
+    if (!content) {
+      return ''
+    }
+    if (this.number) {
+      content = content.replace('$gh_issue_number', this.number.toString())
+    }
+    if (this.title) {
+      content = content.replace('$gh_issue_title', this.title)
+    }
+    if (this.description) {
+      content = content.replace('$gh_issue_description', this.description)
     }
     return content
   }

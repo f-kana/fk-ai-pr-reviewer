@@ -8,7 +8,7 @@ import {
   SendMessageOptions
 } from 'chatgpt'
 import pRetry from 'p-retry'
-import {OpenAIOptions, Options} from './options'
+import {OpenAIOptions, Options, ChatGptApiWrapperBuilder} from './options'
 
 // define type to save parentMessageId and conversationId
 export interface Ids {
@@ -17,39 +17,18 @@ export interface Ids {
 }
 
 export class Bot {
-  private readonly api: ChatGPTAPI | null = null // not free
+  private readonly apiWrapper: ChatGPTAPI | null = null // not free
 
   private readonly options: Options
 
   constructor(options: Options, openaiOptions: OpenAIOptions) {
-    this.options = options
-    if (process.env.OPENAI_API_KEY) {
-      const currentDate = new Date().toISOString().split('T')[0]
-      const systemMessage = `${options.systemMessage} 
-Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
-Current date: ${currentDate}
-
-IMPORTANT: Entire response must be in the language with ISO code: ${options.language}
-`
-
-      this.api = new ChatGPTAPI({
-        apiBaseUrl: options.apiBaseUrl,
-        systemMessage,
-        apiKey: process.env.OPENAI_API_KEY,
-        apiOrg: process.env.OPENAI_API_ORG ?? undefined,
-        debug: options.debug,
-        maxModelTokens: openaiOptions.tokenLimits.maxTokens,
-        maxResponseTokens: openaiOptions.tokenLimits.responseTokens,
-        completionParams: {
-          temperature: options.openaiModelTemperature,
-          model: openaiOptions.model
-        }
-      })
-    } else {
-      const err =
-        "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
+    if (!process.env.OPENAI_API_KEY) {
+      const err = "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
       throw new Error(err)
     }
+
+    this.options = options
+    this.apiWrapper = new ChatGptApiWrapperBuilder(options, openaiOptions).build()
   }
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
@@ -77,7 +56,8 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
 
     let response: ChatMessage | undefined
 
-    if (this.api != null) {
+    if (this.apiWrapper != null) {
+      // parentMessageIdはリファクタリングの余地がありそうだが、確証がないので一旦保留
       const opts: SendMessageOptions = {
         timeoutMs: this.options.openaiTimeoutMS
       }
@@ -85,7 +65,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
         opts.parentMessageId = ids.parentMessageId
       }
       try {
-        response = await pRetry(() => this.api!.sendMessage(message, opts), {
+        response = await pRetry(() => this.apiWrapper!.sendMessage(message, opts), {
           retries: this.options.openaiRetries
         })
       } catch (e: unknown) {

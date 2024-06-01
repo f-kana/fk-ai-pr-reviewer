@@ -1,4 +1,11 @@
-import {info} from '@actions/core'
+import {
+  getBooleanInput,
+  getInput,
+  getMultilineInput,
+  info
+} from '@actions/core'
+import { ChatGPTAPI } from 'chatgpt'
+
 import {minimatch} from 'minimatch'
 import {TokenLimits} from './limits'
 
@@ -24,23 +31,23 @@ export class Options {
   language: string
 
   constructor(
-    debug: boolean,
-    disableReview: boolean,
-    disableReleaseNotes: boolean,
+    debug: boolean = false,
+    disableReview: boolean = false,
+    disableReleaseNotes: boolean = true,
     maxFiles = '0',
     reviewSimpleChanges = false,
     reviewCommentLGTM = false,
     pathFilters: string[] | null = null,
     systemMessage = '',
-    openaiLightModel = 'gpt-3.5-turbo',
-    openaiHeavyModel = 'gpt-3.5-turbo',
+    openaiLightModel = 'gpt-4o',
+    openaiHeavyModel = 'gpt-4o',
     openaiModelTemperature = '0.0',
     openaiRetries = '3',
     openaiTimeoutMS = '120000',
     openaiConcurrencyLimit = '6',
     githubConcurrencyLimit = '6',
     apiBaseUrl = 'https://api.openai.com/v1',
-    language = 'en-US'
+    language = 'en-US' // or ja-JP
   ) {
     this.debug = debug
     this.disableReview = disableReview
@@ -90,6 +97,69 @@ export class Options {
     const ok = this.pathFilters.check(path)
     info(`checking path: ${path} => ${ok}`)
     return ok
+  }
+}
+
+abstract class OptionBuilder {
+  abstract build(): void
+}
+
+export class OptionBuilderWithDefaults extends OptionBuilder {
+  build(): Options {
+    const options: Options = new Options()
+    return options
+  }
+}
+
+export class OptionBuilderFromGhaYml extends OptionBuilder {
+  build(): Options {
+    const options: Options = new Options(
+      getBooleanInput('debug'),
+      getBooleanInput('disable_review'),
+      getBooleanInput('disable_release_notes'),
+      getInput('max_files'),
+      getBooleanInput('review_simple_changes'),
+      getBooleanInput('review_comment_lgtm'),
+      getMultilineInput('path_filters'),
+      getInput('system_message'),
+      getInput('openai_light_model'),
+      getInput('openai_heavy_model'),
+      getInput('openai_model_temperature'),
+      getInput('openai_retries'),
+      getInput('openai_timeout_ms'),
+      getInput('openai_concurrency_limit'),
+      getInput('github_concurrency_limit'),
+      getInput('openai_base_url'),
+      getInput('language')
+    )
+    return options
+  }
+}
+
+export class ChatGptApiWrapperBuilder {
+  constructor(private readonly options: Options, private readonly openaiOptions: OpenAIOptions,) {}
+
+  build(): ChatGPTAPI {
+    const currentDate = new Date().toISOString().split('T')[0]
+    const systemMessage = `${this.options.systemMessage}
+Knowledge cutoff: ${this.openaiOptions.tokenLimits.knowledgeCutOff}
+Current date: ${currentDate}
+
+IMPORTANT: Entire response must be in the language with ISO code: ${this.options.language}
+`
+    return new ChatGPTAPI({
+      apiBaseUrl: this.options.apiBaseUrl,
+      systemMessage,
+      apiKey: process.env.OPENAI_API_KEY ?? '',
+      apiOrg: process.env.OPENAI_API_ORG ?? undefined,
+      debug: this.options.debug,
+      maxModelTokens: this.openaiOptions.tokenLimits.maxTokens,
+      maxResponseTokens: this.openaiOptions.tokenLimits.responseTokens,
+      completionParams: {
+        temperature: this.options.openaiModelTemperature,
+        model: this.openaiOptions.model
+      }
+    })
   }
 }
 
