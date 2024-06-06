@@ -7,12 +7,12 @@ import {throttling} from '@octokit/plugin-throttling'
 
 import dotenv from 'dotenv'
 
-// ローカル開発要。process.env.GITHUB_TOKEN will be loaded from .env
+// ローカル開発用。process.env.GITHUB_TOKEN will be loaded from .env
 if (!process.env.GITHUB_TOKEN) {
   dotenv.config({override: false})
 }
 
-// ダミー値でも良いのでGITHUB_ACTIONに何かセットしないと下記シングルトン生成が失敗するのでダミーセット
+// ダミー値でも良いので何かセットしないとUT時に下記シングルトン生成が失敗するのでダミーセット
 if (process.env.JEST_TEST) {
   process.env.GITHUB_ACTION = '1'
 }

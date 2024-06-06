@@ -4,6 +4,11 @@ import {context as github_context} from '@actions/github'
 import {octokit} from './octokit'
 import {OctokitWrapper} from './octokit-wrapper'
 
+// ダミー値でも良いので何かセットしないとUT時に下記シングルトン生成が失敗するのでダミーセット
+if (process.env.JEST_TEST) {
+  process.env.GITHUB_REPOSITORY = 'dummy/dummy'
+}
+
 // eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
@@ -76,7 +81,7 @@ ${tag}`
     }
   }
 
-  getContentWithinTags(content: string, startTag: string, endTag: string) {
+  protected static getContentWithinTags(content: string, startTag: string, endTag: string) {
     const start = content.indexOf(startTag)
     const end = content.indexOf(endTag)
     if (start >= 0 && end >= 0) {
@@ -85,7 +90,7 @@ ${tag}`
     return ''
   }
 
-  removeContentWithinTags(content: string, startTag: string, endTag: string) {
+  protected static removeContentWithinTags(content: string, startTag: string, endTag: string) {
     const start = content.indexOf(startTag)
     const end = content.lastIndexOf(endTag)
     if (start >= 0 && end >= 0) {
@@ -95,19 +100,19 @@ ${tag}`
   }
 
   getRawSummary(summary: string) {
-    return this.getContentWithinTags(summary, RAW_SUMMARY_START_TAG, RAW_SUMMARY_END_TAG)
+    return Commenter.getContentWithinTags(summary, RAW_SUMMARY_START_TAG, RAW_SUMMARY_END_TAG)
   }
 
   getShortSummary(summary: string) {
-    return this.getContentWithinTags(summary, SHORT_SUMMARY_START_TAG, SHORT_SUMMARY_END_TAG)
+    return Commenter.getContentWithinTags(summary, SHORT_SUMMARY_START_TAG, SHORT_SUMMARY_END_TAG)
   }
 
   getDescription(description: string) {
-    return this.removeContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
+    return Commenter.removeContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
   }
 
   getReleaseNotes(description: string) {
-    const releaseNotes = this.getContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
+    const releaseNotes = Commenter.getContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
     return releaseNotes.replace(/(^|\n)> .*/g, '')
   }
 
@@ -125,7 +130,7 @@ ${tag}`
       }
       const description = this.getDescription(body)
 
-      const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
+      const messageClean = Commenter.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
       const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`
       await octoWrapper.updatePr({pull_number: pullNumber, body: newDescription})
     } catch (e) {
