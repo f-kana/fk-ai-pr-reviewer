@@ -13,3 +13,7 @@ curl https://api.openai.com/v1/chat/completions \
 # GitHub
 GH_USER=hoge-user
 curl https://api.github.com/repos/${GH_USER}/sample-ai-reviewed/issues/1
+curl https://api.github.com/repos/${GH_USER}/sample-ai-reviewed/issues/6
+
+
+curl https://api.github.com/repos/${GH_USER}/sample-ai-reviewed/pulls/6
