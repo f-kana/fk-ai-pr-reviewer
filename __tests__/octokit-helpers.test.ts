@@ -1,4 +1,4 @@
-import {expect, test, describe, it, beforeAll} from '@jest/globals'
+import {expect, describe, it, beforeAll} from '@jest/globals'
 import {GhPrHandler, GhIssueHandler} from '../src/octokit-helpers'
 import {GhTestDataLoaderForPr6ForIssue5, GhTestDataLoaderForIssue5} from './testdata-loader';
 

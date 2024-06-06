@@ -12,22 +12,22 @@ export class Inputs {
   diff: string
   commentChain: string
   comment: string
-  ghIssue?: GhIssue
+  relatedIssueTitleAndBody: string
 
   constructor(
     systemMessage = '',
-    title = 'no title provided',
-    description = 'no description provided',
+    title = '(no title provided)',
+    description = '(no description provided)',
     rawSummary = '',
     shortSummary = '',
     filename = '',
-    fileContent = 'file contents cannot be provided',
-    fileDiff = 'file diff cannot be provided',
+    fileContent = '(file contents cannot be provided)',
+    fileDiff = '(file diff cannot be provided)',
     patches = '',
-    diff = 'no diff',
-    commentChain = 'no other comments on this patch',
-    comment = 'no comment provided',
-    ghIssue?: GhIssue,
+    diff = '(no diff)',
+    commentChain = '(no other comments on this patch)',
+    comment = '(no comment provided)',
+    relatedIssueTitleAndBody = '(no issue is associated with this PR)'
   ) {
     this.systemMessage = systemMessage
     this.title = title
@@ -41,7 +41,7 @@ export class Inputs {
     this.diff = diff
     this.commentChain = commentChain
     this.comment = comment
-    this.ghIssue = ghIssue
+    this.relatedIssueTitleAndBody = relatedIssueTitleAndBody
   }
 
   clone(): Inputs {
@@ -58,95 +58,33 @@ export class Inputs {
       this.diff,
       this.commentChain,
       this.comment,
-      this.ghIssue?.clone() ?? undefined,
+      this.relatedIssueTitleAndBody
     )
-  }
-
-  _subtractGhIssueNumber(title: string, description: string): number {
-    return 0 // dummy return
   }
 
   /// content: 「$system_message」 などのプレースホルダを含んだ文字列
   ///    Promptsクラスのプロパティが来ることが多い。
   render(content: string): string {
-    if (!content) {
-      return ''
-    }
-    if (this.systemMessage) {
-      content = content.replace('$system_message', this.systemMessage)
-    }
-    if (this.title) {
-      content = content.replace('$title', this.title)
-    }
-    if (this.description) {
-      content = content.replace('$description', this.description)
-    }
-    if (this.rawSummary) {
-      content = content.replace('$raw_summary', this.rawSummary)
-    }
-    if (this.shortSummary) {
-      content = content.replace('$short_summary', this.shortSummary)
-    }
-    if (this.filename) {
-      content = content.replace('$filename', this.filename)
-    }
-    if (this.fileContent) {
-      content = content.replace('$file_content', this.fileContent)
-    }
-    if (this.fileDiff) {
-      content = content.replace('$file_diff', this.fileDiff)
-    }
-    if (this.patches) {
-      content = content.replace('$patches', this.patches)
-    }
-    if (this.diff) {
-      content = content.replace('$diff', this.diff)
-    }
-    if (this.commentChain) {
-      content = content.replace('$comment_chain', this.commentChain)
-    }
-    if (this.comment) {
-      content = content.replace('$comment', this.comment)
-    }
+    const replacements: [string, string][] = [
+      ['$system_message', this.systemMessage],
+      ['$title', this.title],
+      ['$description', this.description],
+      ['$raw_summary', this.rawSummary],
+      ['$short_summary', this.shortSummary],
+      ['$filename', this.filename],
+      ['$file_content', this.fileContent],
+      ['$file_diff', this.fileDiff],
+      ['$patches', this.patches],
+      ['$diff', this.diff],
+      ['$comment_chain', this.commentChain],
+      ['$comment', this.comment],
+      ['$relatedIssueTitleAndBody', this.relatedIssueTitleAndBody]
+    ]
 
-    content = this.ghIssue?.render(content) ?? content
-
-    return content
-  }
-}
-
-/// GitHub Issuesの中身
-export class GhIssue {
-  number: number
-  title: string
-  description: string
-
-  constructor(
-    number = 0,
-    title = 'no issue is associated with this PR',
-    description = 'no issue is associated with this PR',
-  ) {
-    this.number = number
-    this.title = title
-    this.description = description
-  }
-
-  clone(): GhIssue {
-    return new GhIssue(this.number, this.title, this.description)
-  }
-
-  render(content: string): string {
-    if (!content) {
-      return ''
-    }
-    if (this.number) {
-      content = content.replace('$gh_issue_number', this.number.toString())
-    }
-    if (this.title) {
-      content = content.replace('$gh_issue_title', this.title)
-    }
-    if (this.description) {
-      content = content.replace('$gh_issue_description', this.description)
+    for (const [searchValue, replaceValue] of replacements) {
+      if (replaceValue) {
+        content = content.replace(searchValue, replaceValue)
+      }
     }
     return content
   }
