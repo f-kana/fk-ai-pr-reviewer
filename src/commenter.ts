@@ -2,6 +2,7 @@ import {getInput, info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import {octokit} from './octokit'
+import {OctokitWrapper} from './octokit-wrapper'
 
 // eslint-disable-next-line camelcase
 const context = github_context
@@ -113,14 +114,11 @@ ${tag}`
   async updateDescription(pullNumber: number, message: string) {
     // add this response to the description field of the PR as release notes by looking
     // for the tag (marker)
+    const octoWrapper = new OctokitWrapper(octokit, repo.owner, repo.repo)
+
     try {
       // get latest description from PR
-      const pr = await octokit.pulls.get({
-        owner: repo.owner,
-        repo: repo.repo,
-        // eslint-disable-next-line camelcase
-        pull_number: pullNumber
-      })
+      const pr = await octoWrapper.getPr({pull_number: pullNumber})
       let body = ''
       if (pr.data.body) {
         body = pr.data.body
@@ -129,13 +127,7 @@ ${tag}`
 
       const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
       const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`
-      await octokit.pulls.update({
-        owner: repo.owner,
-        repo: repo.repo,
-        // eslint-disable-next-line camelcase
-        pull_number: pullNumber,
-        body: newDescription
-      })
+      await octoWrapper.updatePr({pull_number: pullNumber, body: newDescription})
     } catch (e) {
       warning(`Failed to get PR: ${e}, skipping adding release notes to description.`)
     }

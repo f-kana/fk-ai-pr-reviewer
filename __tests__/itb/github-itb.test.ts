@@ -4,7 +4,7 @@ import {octokit} from '../../src/octokit'
 import {OctokitWrapper} from '../../src/octokit-wrapper'
 
 /**
- * GitHub APIとの接続テスト。オプション付で、`RUN_GITHUB_API_TESTS=1 npm test`としたときのみ実行可能。アクセス制限(1時間あたり60回)に係るので。
+ * GitHub APIとの接続テスト。オプション付で、`RUN_GITHUB_API_TESTS=1 npm run test`としたときのみ実行可能。アクセス制限(1時間あたり60回)に係るので。
  * GitHub上のf-kana/sample-ai-reviewedリポジトリに依存したテストになっている。
  * - #1: PR (also Issue)
  * - #5: Issue
@@ -33,9 +33,9 @@ describe('External Integration Tests (ITb) with GitHub API', () => {
     })
     it('OctokitWrapper.getPr Success (#6 is a PR)', async () => {
       const octokitWrapper = new OctokitWrapper(octokit, 'f-kana', 'sample-ai-reviewed')
-      const issue = await octokitWrapper.getPr({pull_number: 6})
-      expect(issue).not.toBeNull()
-      expect(issue.status).toBe(200)
+      const pr = await octokitWrapper.getPr({pull_number: 6})
+      expect(pr).not.toBeNull()
+      expect(pr.status).toBe(200)
     })
     it('OctokitWrapper.getPr Fail (#5 is not a PR, but an Issue)', async () => {
       const octokitWrapper = new OctokitWrapper(octokit, 'f-kana', 'sample-ai-reviewed')

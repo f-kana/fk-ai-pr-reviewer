@@ -1,32 +1,34 @@
 import {OctokitResponse} from '@octokit/types';
 
-/// PRをパースして情報を引き出す。特に関連Issue番号を取得するのが目的。
-export class GhPrHandler {
+abstract class GhRestResponseHandler {
   /// 引き数はGitHub APIから取得できるJSON相当のオブジェクト
   // （anyではなくPullRequest型にしたいがimportの仕方がわからない）
-  constructor(public readonly pullRequestObj: OctokitResponse<any>) {}
+  constructor(public readonly restResponse: OctokitResponse<any>) {}
 
   get title(): string {
-    return this.pullRequestObj.data.title
+    return this.restResponse.data.title
   }
 
   get body(): string {
-    return this.pullRequestObj.data.body
+    return this.restResponse.data.body
   }
+}
 
+/// PRをパースして情報を引き出す。特に関連Issue番号を取得するのが目的。
+export class GhPrHandler extends GhRestResponseHandler {
   get headBranchName(): string { // featureブランチ
-    return this.pullRequestObj.data.head.ref
+    return this.restResponse.data.head.ref
   }
 
   get baseBranchName(): string { // mainブランチ
-    return this.pullRequestObj.data.base.ref
+    return this.restResponse.data.base.ref
   }
 
   get relatedIssueUrl(): string | null {
     if (!this.relatedIssueNumber) {
       return null
     }
-    const baseUrl = this.pullRequestObj.data.head.repo.issues_url
+    const baseUrl = this.restResponse.data.head.repo.issues_url
     return baseUrl.replace('{/number}', `/${this.relatedIssueNumber.toString()}`)
   }
 
@@ -53,3 +55,10 @@ export class GhPrHandler {
   }
 }
 
+export class GhIssueHandler extends GhRestResponseHandler {
+  get titleAndBody(): string {
+    const part1: string = `Issue Title: ${this.title}`
+    const part2: string = this.body ? `\n\nIssue Details: ${this.body}` : ''
+    return part1 + part2
+  }
+}

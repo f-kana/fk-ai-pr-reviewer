@@ -1,12 +1,7 @@
 import './fetch-polyfill'
 
 import {info, setFailed, warning} from '@actions/core'
-import {
-  ChatGPTAPI,
-  ChatGPTError,
-  ChatMessage,
-  SendMessageOptions
-} from 'chatgpt'
+import {ChatGPTAPI, ChatGPTError, ChatMessage, SendMessageOptions} from 'chatgpt'
 import pRetry from 'p-retry'
 import {OpenAIOptions, Options, ChatGptApiWrapperBuilder} from './options'
 
@@ -44,10 +39,7 @@ export class Bot {
     }
   }
 
-  private readonly chat_ = async (
-    message: string,
-    ids: Ids
-  ): Promise<[string, Ids]> => {
+  private readonly chat_ = async (message: string, ids: Ids): Promise<[string, Ids]> => {
     // record timing
     const start = Date.now()
     if (!message) {
@@ -70,18 +62,12 @@ export class Bot {
         })
       } catch (e: unknown) {
         if (e instanceof ChatGPTError) {
-          info(
-            `response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`
-          )
+          info(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`)
         }
       }
       const end = Date.now()
       info(`response: ${JSON.stringify(response)}`)
-      info(
-        `openai sendMessage (including retries) response time: ${
-          end - start
-        } ms`
-      )
+      info(`openai sendMessage (including retries) response time: ${end - start} ms`)
     } else {
       setFailed('The OpenAI API is not initialized')
     }
