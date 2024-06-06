@@ -132,11 +132,7 @@ export class GhIssue {
   }
 
   clone(): GhIssue {
-    return new GhIssue(
-      this.number,
-      this.title,
-      this.description,
-    )
+    return new GhIssue(this.number, this.title, this.description)
   }
 
   render(content: string): string {

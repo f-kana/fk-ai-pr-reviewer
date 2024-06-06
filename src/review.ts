@@ -29,27 +29,22 @@ const repo = context.repo
 
 const ignoreKeyword = '@coderabbitai: ignore'
 
-export const codeReview = async (
-  lightBot: Bot,
-  heavyBot: Bot,
-  options: Options,
-  prompts: Prompts
-): Promise<void> => {
+export const codeReview = async (lightBot: Bot, heavyBot: Bot, options: Options, prompts: Prompts): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
   const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit)
-  
+
   // Eventが有効なPull Requestかどうかを確認する
   if (context.eventName !== 'pull_request' && context.eventName !== 'pull_request_target') {
     warning(`Skipped: current event is ${context.eventName}, only support pull_request event`)
-    return;
+    return
   }
   if (context.payload.pull_request == null) {
     warning('Skipped: context.payload.pull_request is null')
-    return;
+    return
   }
-  
+
   const inputs: Inputs = new Inputs()
   inputs.title = context.payload.pull_request.title
   if (context.payload.pull_request.body != null) {
@@ -66,19 +61,14 @@ export const codeReview = async (
   inputs.systemMessage = options.systemMessage
 
   // get SUMMARIZE_TAG message
-  const existingSummarizeCmt = await commenter.findCommentWithTag(
-    SUMMARIZE_TAG,
-    context.payload.pull_request.number
-  )
+  const existingSummarizeCmt = await commenter.findCommentWithTag(SUMMARIZE_TAG, context.payload.pull_request.number)
   let existingCommitIdsBlock = ''
   let existingSummarizeCmtBody = ''
   if (existingSummarizeCmt != null) {
     existingSummarizeCmtBody = existingSummarizeCmt.body
     inputs.rawSummary = commenter.getRawSummary(existingSummarizeCmtBody)
     inputs.shortSummary = commenter.getShortSummary(existingSummarizeCmtBody)
-    existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(
-      existingSummarizeCmtBody
-    )
+    existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(existingSummarizeCmtBody)
   }
 
   const allCommitIds = await commenter.getAllCommitIds()
@@ -91,15 +81,8 @@ export const codeReview = async (
     )
   }
 
-  if (
-    highestReviewedCommitId === '' ||
-    highestReviewedCommitId === context.payload.pull_request.head.sha
-  ) {
-    info(
-      `Will review from the base commit: ${
-        context.payload.pull_request.base.sha as string
-      }`
-    )
+  if (highestReviewedCommitId === '' || highestReviewedCommitId === context.payload.pull_request.head.sha) {
+    info(`Will review from the base commit: ${context.payload.pull_request.base.sha as string}`)
     highestReviewedCommitId = context.payload.pull_request.base.sha
   } else {
     info(`Will review from commit: ${highestReviewedCommitId}`)
@@ -131,9 +114,7 @@ export const codeReview = async (
 
   // Filter out any file that is changed compared to the incremental changes
   const files = targetBranchFiles.filter((targetBranchFile: any) =>
-    incrementalFiles.some(
-      (incrementalFile: any) => incrementalFile.filename === targetBranchFile.filename
-    )
+    incrementalFiles.some((incrementalFile: any) => incrementalFile.filename === targetBranchFile.filename)
   )
 
   if (files.length === 0) {
@@ -141,7 +122,7 @@ export const codeReview = async (
     return
   }
 
-  const { filterSelectedFiles, filterIgnoredFiles } = _filterFiles(files, options);
+  const {filterSelectedFiles, filterIgnoredFiles} = _filterFiles(files, options)
   if (filterSelectedFiles.length === 0) {
     warning('Skipped: filterSelectedFiles is null')
     return
@@ -181,7 +162,7 @@ export const codeReview = async (
           warning(`Failed to get file contents: ${e as string}. This is OK if it's a new file.`)
         }
 
-        const fileDiff = file.patch || '';
+        const fileDiff = file.patch || ''
 
         const patches: Array<[number, number, string]> = []
         for (const patch of splitPatch(file.patch)) {
@@ -189,15 +170,11 @@ export const codeReview = async (
           if (patchLines == null) {
             continue
           }
-          const hunksStr = _formatHunks(patch);
+          const hunksStr = _formatHunks(patch)
           if (hunksStr == null) {
-            continue;
+            continue
           }
-          patches.push([
-            patchLines.newHunk.startLine,
-            patchLines.newHunk.endLine,
-            hunksStr
-          ])
+          patches.push([patchLines.newHunk.startLine, patchLines.newHunk.endLine, hunksStr])
         }
         if (patches.length > 0) {
           return [file.filename, fileContent, fileDiff, patches] as [
@@ -214,19 +191,18 @@ export const codeReview = async (
   )
 
   // Filter out any null results
-  const filesAndChanges = filteredFiles.filter(file => file !== null) as Array<[string, string, string, Array<[number, number, string]>]>
+  const filesAndChanges = filteredFiles.filter(file => file !== null) as Array<
+    [string, string, string, Array<[number, number, string]>]
+  >
   if (filesAndChanges.length === 0) {
     error('Skipped: no files to review')
     return
   }
 
-  let statusMsg = _generateStatusMsg(filesAndChanges, highestReviewedCommitId, context.payload.pull_request.head.sha);
+  let statusMsg = _generateStatusMsg(filesAndChanges, highestReviewedCommitId, context.payload.pull_request.head.sha)
 
   // update the existing comment with in progress status
-  const inProgressSummarizeCmt = commenter.addInProgressStatus(
-    existingSummarizeCmtBody,
-    statusMsg
-  )
+  const inProgressSummarizeCmt = commenter.addInProgressStatus(existingSummarizeCmtBody, statusMsg)
 
   // add in progress status to the summarize comment
   await commenter.comment(`${inProgressSummarizeCmt}`, SUMMARIZE_TAG, 'replace')
@@ -250,10 +226,7 @@ export const codeReview = async (
     ins.fileDiff = fileDiff
 
     // render prompt based on inputs so far
-    const summarizePrompt = prompts.renderSummarizeFileDiff(
-      ins,
-      options.reviewSimpleChanges
-    )
+    const summarizePrompt = prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges)
     const tokens = getTokenCount(summarizePrompt)
 
     if (tokens > options.lightTokenLimits.requestTokens) {
@@ -301,19 +274,15 @@ export const codeReview = async (
   const skippedFiles = []
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
     if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
-      summaryPromises.push(
-        openaiConcurrencyLimit(
-          async () => await doSummary(filename, fileContent, fileDiff)
-        )
-      )
+      summaryPromises.push(openaiConcurrencyLimit(async () => await doSummary(filename, fileContent, fileDiff)))
     } else {
       skippedFiles.push(filename)
     }
   }
 
-  const summaries = (await Promise.all(summaryPromises)).filter(
-    summary => summary !== null
-  ) as Array<[string, string, boolean]>
+  const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null) as Array<
+    [string, string, boolean]
+  >
 
   if (summaries.length > 0) {
     const batchSize = 10
@@ -327,10 +296,7 @@ ${filename}: ${summary}
 `
       }
       // ask chatgpt to summarize the summaries
-      const [summarizeResp] = await heavyBot.chat(
-        prompts.renderSummarizeChangesets(inputs),
-        {}
-      )
+      const [summarizeResp] = await heavyBot.chat(prompts.renderSummarizeChangesets(inputs), {})
       if (summarizeResp === '') {
         warning('summarize: nothing obtained from openai')
       } else {
@@ -340,10 +306,7 @@ ${filename}: ${summary}
   }
 
   // final summary
-  const [summarizeFinalResponse] = await heavyBot.chat(
-    prompts.renderSummarize(inputs),
-    {}
-  )
+  const [summarizeFinalResponse] = await heavyBot.chat(prompts.renderSummarize(inputs), {})
   if (summarizeFinalResponse === '') {
     info('summarize: nothing obtained from openai')
   }
@@ -351,32 +314,21 @@ ${filename}: ${summary}
   await _processReleaseNotes(options, inputs, context, commenter, heavyBot, prompts)
 
   // generate a short summary as well
-  const [summarizeShortResponse] = await heavyBot.chat(
-    prompts.renderSummarizeShort(inputs),
-    {}
-  )
+  const [summarizeShortResponse] = await heavyBot.chat(prompts.renderSummarizeShort(inputs), {})
   inputs.shortSummary = summarizeShortResponse
 
-  let summarizeComment = _generateSummarizeComment(summarizeFinalResponse, inputs);
+  let summarizeComment = _generateSummarizeComment(summarizeFinalResponse, inputs)
 
-  statusMsg += _appendDetailsToStatusMsg(skippedFiles, summariesFailed);
+  statusMsg += _appendDetailsToStatusMsg(skippedFiles, summariesFailed)
 
   if (!options.disableReview) {
     const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
-      const needsReview =
-        summaries.find(
-          ([summaryFilename]) => summaryFilename === filename
-        )?.[2] ?? true
+      const needsReview = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true
       return needsReview
     })
 
     const reviewsSkipped = filesAndChanges
-      .filter(
-        ([filename]) =>
-          !filesAndChangesReview.some(
-            ([reviewFilename]) => reviewFilename === filename
-          )
-      )
+      .filter(([filename]) => !filesAndChangesReview.some(([reviewFilename]) => reviewFilename === filename))
       .map(([filename]) => filename)
 
     // failed reviews array
@@ -442,18 +394,11 @@ ${filename}: ${summary}
             commentChain = allChains
           }
         } catch (e: any) {
-          warning(
-            `Failed to get comments: ${e as string}, skipping. backtrace: ${
-              e.stack as string
-            }`
-          )
+          warning(`Failed to get comments: ${e as string}, skipping. backtrace: ${e.stack as string}`)
         }
         // try packing comment_chain into this request
         const commentChainTokens = getTokenCount(commentChain)
-        if (
-          tokens + commentChainTokens >
-          options.heavyTokenLimits.requestTokens
-        ) {
+        if (tokens + commentChainTokens > options.heavyTokenLimits.requestTokens) {
           commentChain = ''
         } else {
           tokens += commentChainTokens
@@ -479,10 +424,7 @@ ${commentChain}
       if (patchesPacked > 0) {
         // perform review
         try {
-          const [response] = await heavyBot.chat(
-            prompts.renderReviewFileDiff(ins),
-            {}
-          )
+          const [response] = await heavyBot.chat(prompts.renderReviewFileDiff(ins), {})
           if (response === '') {
             info('review: nothing obtained from openai')
             reviewsFailed.push(`${filename} (no response)`)
@@ -494,8 +436,7 @@ ${commentChain}
             // check for LGTM
             if (
               !options.reviewCommentLGTM &&
-              (review.comment.includes('LGTM') ||
-                review.comment.includes('looks good to me'))
+              (review.comment.includes('LGTM') || review.comment.includes('looks good to me'))
             ) {
               lgtmCount += 1
               continue
@@ -507,22 +448,13 @@ ${commentChain}
 
             try {
               reviewCount += 1
-              await commenter.bufferReviewComment(
-                filename,
-                review.startLine,
-                review.endLine,
-                `${review.comment}`
-              )
+              await commenter.bufferReviewComment(filename, review.startLine, review.endLine, `${review.comment}`)
             } catch (e: any) {
               reviewsFailed.push(`${filename} comment failed (${e as string})`)
             }
           }
         } catch (e: any) {
-          warning(
-            `Failed to review: ${e as string}, skipping. backtrace: ${
-              e.stack as string
-            }`
-          )
+          warning(`Failed to review: ${e as string}, skipping. backtrace: ${e.stack as string}`)
           reviewsFailed.push(`${filename} (${e as string})`)
         }
       } else {
@@ -544,7 +476,7 @@ ${commentChain}
     }
 
     await Promise.all(reviewPromises)
-    statusMsg += _generateReviewStatusMsg(reviewsFailed, reviewsSkipped, reviewCount, lgtmCount);
+    statusMsg += _generateReviewStatusMsg(reviewsFailed, reviewsSkipped, reviewCount, lgtmCount)
 
     // add existing_comment_ids_block with latest head sha
     summarizeComment += `\n${commenter.addReviewedCommitId(
@@ -553,11 +485,7 @@ ${commentChain}
     )}`
 
     // post the review
-    await commenter.submitReview(
-      context.payload.pull_request.number,
-      commits[commits.length - 1].sha,
-      statusMsg
-    )
+    await commenter.submitReview(context.payload.pull_request.number, commits[commits.length - 1].sha, statusMsg)
   }
 
   // post the final summary comment
@@ -575,13 +503,13 @@ const _filterFiles = (files: any[], options: any) => {
       filterSelectedFiles.push(file)
     }
   }
-  return { filterSelectedFiles, filterIgnoredFiles }
+  return {filterSelectedFiles, filterIgnoredFiles}
 }
 
 const _formatHunks = (patch: string): string | null => {
-  const hunks = parsePatch(patch);
+  const hunks = parsePatch(patch)
   if (hunks == null) {
-    return null;
+    return null
   }
   return `
 ---new_hunk---
@@ -593,7 +521,7 @@ ${hunks.newHunk}
 \`\`\`
 ${hunks.oldHunk}
 \`\`\`
-`;
+`
 }
 
 const _generateStatusMsg = (
@@ -611,12 +539,10 @@ ${
 <details>
 <summary>Files selected (${filesAndChanges.length})</summary>
 
-* ${filesAndChanges
-        .map(([filename, , , patches]) => `${filename} (${patches.length})`)
-        .join('\n* ')}
+* ${filesAndChanges.map(([filename, , , patches]) => `${filename} (${patches.length})`).join('\n* ')}
 </details>`
     : ''
-}`;
+}`
 }
 
 const _processReleaseNotes = async (
@@ -625,24 +551,18 @@ const _processReleaseNotes = async (
   context: any,
   commenter: Commenter,
   heavyBot: Bot,
-  prompts: Prompts,
+  prompts: Prompts
 ): Promise<void> => {
   if (options.disableReleaseNotes === false) {
     // final release notes
-    const [releaseNotesResponse] = await heavyBot.chat(
-      prompts.renderSummarizeReleaseNotes(inputs),
-      {}
-    )
+    const [releaseNotesResponse] = await heavyBot.chat(prompts.renderSummarizeReleaseNotes(inputs), {})
     if (releaseNotesResponse === '') {
       info('release notes: nothing obtained from openai')
     } else {
       let message = '### Summary by CodeRabbit\n\n'
       message += releaseNotesResponse
       try {
-        await commenter.updateDescription(
-          context.payload.pull_request.number,
-          message
-        )
+        await commenter.updateDescription(context.payload.pull_request.number, message)
       } catch (e: any) {
         warning(`release notes: error from github: ${e.message as string}`)
       }
@@ -665,7 +585,7 @@ ${SHORT_SUMMARY_END_TAG}
 <summary>Uplevel your code reviews with CodeRabbit Pro</summary>
 
 ### CodeRabbit Pro
-`;
+`
 }
 
 const _appendDetailsToStatusMsg = (skippedFiles: string[], summariesFailed: string[]): string => {
@@ -674,9 +594,7 @@ ${
   skippedFiles.length > 0
     ? `
 <details>
-<summary>Files not processed due to max files limit (${
-        skippedFiles.length
-      })</summary>
+<summary>Files not processed due to max files limit (${skippedFiles.length})</summary>
 
 * ${skippedFiles.join('\n* ')}
 
@@ -688,12 +606,10 @@ ${
   summariesFailed.length > 0
     ? `
 <details>
-<summary>Files not summarized due to errors (${
-        summariesFailed.length
-      })</summary>
+<summary>Files not summarized due to errors (${summariesFailed.length})</summary>
 `
     : ''
-}`;
+}`
 }
 
 const _generateReviewStatusMsg = (
@@ -702,7 +618,7 @@ const _generateReviewStatusMsg = (
   reviewCount: number,
   lgtmCount: number
 ): string => {
-  let statusMsg = '';
+  let statusMsg = ''
   if (reviewsFailed.length > 0) {
     statusMsg += `
 <details>
@@ -711,7 +627,7 @@ const _generateReviewStatusMsg = (
 * ${reviewsFailed.join('\n* ')}
 
 </details>
-`;
+`
   }
   if (reviewsSkipped.length > 0) {
     statusMsg += `
@@ -721,7 +637,7 @@ const _generateReviewStatusMsg = (
 * ${reviewsSkipped.join('\n* ')}
 
 </details>
-`;
+`
   }
   statusMsg += `
 <details>
@@ -749,8 +665,8 @@ const _generateReviewStatusMsg = (
 - Add \`@coderabbitai: ignore\` anywhere in the PR description to pause further reviews from the bot.
 
 </details>
-`;
-  return statusMsg;
+`
+  return statusMsg
 }
 
 const splitPatch = (patch: string | null | undefined): string[] => {
@@ -805,9 +721,7 @@ const patchStartEndLine = (
   }
 }
 
-const parsePatch = (
-  patch: string
-): {oldHunk: string; newHunk: string} | null => {
+const parsePatch = (patch: string): {oldHunk: string; newHunk: string} | null => {
   const hunkInfo = patchStartEndLine(patch)
   if (hunkInfo == null) {
     return null
@@ -843,10 +757,7 @@ const parsePatch = (
     } else {
       // context line
       oldHunkLines.push(`${line}`)
-      if (
-        removalOnly ||
-        (currentLine > skipStart && currentLine <= lines.length - skipEnd)
-      ) {
+      if (removalOnly || (currentLine > skipStart && currentLine <= lines.length - skipEnd)) {
         newHunkLines.push(`${newLine}: ${line}`)
       } else {
         newHunkLines.push(`${line}`)
@@ -867,11 +778,7 @@ interface Review {
   comment: string
 }
 
-function parseReview(
-  response: string,
-  patches: Array<[number, number, string]>,
-  debug = false
-): Review[] {
+function parseReview(response: string, patches: Array<[number, number, string]>, debug = false): Review[] {
   const reviews: Review[] = []
 
   response = sanitizeResponse(response.trim())
@@ -899,17 +806,13 @@ function parseReview(
       for (const [startLine, endLine] of patches) {
         const intersectionStart = Math.max(review.startLine, startLine)
         const intersectionEnd = Math.min(review.endLine, endLine)
-        const intersectionLength = Math.max(
-          0,
-          intersectionEnd - intersectionStart + 1
-        )
+        const intersectionLength = Math.max(0, intersectionEnd - intersectionStart + 1)
 
         if (intersectionLength > maxIntersection) {
           maxIntersection = intersectionLength
           bestPatchStartLine = startLine
           bestPatchEndLine = endLine
-          withinPatch =
-            intersectionLength === review.endLine - review.startLine + 1
+          withinPatch = intersectionLength === review.endLine - review.startLine + 1
         }
 
         if (withinPatch) break
@@ -933,9 +836,7 @@ ${review.comment}`
 
       reviews.push(review)
 
-      info(
-        `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
-      )
+      info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`)
     }
   }
 
@@ -947,17 +848,11 @@ ${review.comment}`
     let codeBlockStartIndex = comment.indexOf(codeBlockStart)
 
     while (codeBlockStartIndex !== -1) {
-      const codeBlockEndIndex = comment.indexOf(
-        codeBlockEnd,
-        codeBlockStartIndex + codeBlockStart.length
-      )
+      const codeBlockEndIndex = comment.indexOf(codeBlockEnd, codeBlockStartIndex + codeBlockStart.length)
 
       if (codeBlockEndIndex === -1) break
 
-      const codeBlock = comment.substring(
-        codeBlockStartIndex + codeBlockStart.length,
-        codeBlockEndIndex
-      )
+      const codeBlock = comment.substring(codeBlockStartIndex + codeBlockStart.length, codeBlockEndIndex)
       const sanitizedBlock = codeBlock.replace(lineNumberRegex, '')
 
       comment =
@@ -967,10 +862,7 @@ ${review.comment}`
 
       codeBlockStartIndex = comment.indexOf(
         codeBlockStart,
-        codeBlockStartIndex +
-          codeBlockStart.length +
-          sanitizedBlock.length +
-          codeBlockEnd.length
+        codeBlockStartIndex + codeBlockStart.length + sanitizedBlock.length + codeBlockEnd.length
       )
     }
 

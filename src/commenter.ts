@@ -9,14 +9,11 @@ const repo = context.repo
 
 export const COMMENT_GREETING = `${getInput('bot_icon')}   CodeRabbit`
 
-export const COMMENT_TAG =
-  '<!-- This is an auto-generated comment by OSS CodeRabbit -->'
+export const COMMENT_TAG = '<!-- This is an auto-generated comment by OSS CodeRabbit -->'
 
-export const COMMENT_REPLY_TAG =
-  '<!-- This is an auto-generated reply by OSS CodeRabbit -->'
+export const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OSS CodeRabbit -->'
 
-export const SUMMARIZE_TAG =
-  '<!-- This is an auto-generated comment: summarize by OSS CodeRabbit -->'
+export const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by OSS CodeRabbit -->'
 
 export const IN_PROGRESS_START_TAG =
   '<!-- This is an auto-generated comment: summarize review in progress by OSS CodeRabbit -->'
@@ -24,10 +21,8 @@ export const IN_PROGRESS_START_TAG =
 export const IN_PROGRESS_END_TAG =
   '<!-- end of auto-generated comment: summarize review in progress by OSS CodeRabbit -->'
 
-export const DESCRIPTION_START_TAG =
-  '<!-- This is an auto-generated comment: release notes by OSS CodeRabbit -->'
-export const DESCRIPTION_END_TAG =
-  '<!-- end of auto-generated comment: release notes by OSS CodeRabbit -->'
+export const DESCRIPTION_START_TAG = '<!-- This is an auto-generated comment: release notes by OSS CodeRabbit -->'
+export const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by OSS CodeRabbit -->'
 
 export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeRabbit -->
 <!--
@@ -56,9 +51,7 @@ export class Commenter {
     } else if (context.payload.issue != null) {
       target = context.payload.issue.number
     } else {
-      warning(
-        'Skipped: context.payload.pull_request and context.payload.issue are both null'
-      )
+      warning('Skipped: context.payload.pull_request and context.payload.issue are both null')
       return
     }
 
@@ -101,35 +94,19 @@ ${tag}`
   }
 
   getRawSummary(summary: string) {
-    return this.getContentWithinTags(
-      summary,
-      RAW_SUMMARY_START_TAG,
-      RAW_SUMMARY_END_TAG
-    )
+    return this.getContentWithinTags(summary, RAW_SUMMARY_START_TAG, RAW_SUMMARY_END_TAG)
   }
 
   getShortSummary(summary: string) {
-    return this.getContentWithinTags(
-      summary,
-      SHORT_SUMMARY_START_TAG,
-      SHORT_SUMMARY_END_TAG
-    )
+    return this.getContentWithinTags(summary, SHORT_SUMMARY_START_TAG, SHORT_SUMMARY_END_TAG)
   }
 
   getDescription(description: string) {
-    return this.removeContentWithinTags(
-      description,
-      DESCRIPTION_START_TAG,
-      DESCRIPTION_END_TAG
-    )
+    return this.removeContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
   }
 
   getReleaseNotes(description: string) {
-    const releaseNotes = this.getContentWithinTags(
-      description,
-      DESCRIPTION_START_TAG,
-      DESCRIPTION_END_TAG
-    )
+    const releaseNotes = this.getContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
     return releaseNotes.replace(/(^|\n)> .*/g, '')
   }
 
@@ -150,11 +127,7 @@ ${tag}`
       }
       const description = this.getDescription(body)
 
-      const messageClean = this.removeContentWithinTags(
-        message,
-        DESCRIPTION_START_TAG,
-        DESCRIPTION_END_TAG
-      )
+      const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG)
       const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`
       await octokit.pulls.update({
         owner: repo.owner,
@@ -164,9 +137,7 @@ ${tag}`
         body: newDescription
       })
     } catch (e) {
-      warning(
-        `Failed to get PR: ${e}, skipping adding release notes to description.`
-      )
+      warning(`Failed to get PR: ${e}, skipping adding release notes to description.`)
     }
   }
 
@@ -177,12 +148,7 @@ ${tag}`
     message: string
   }> = []
 
-  async bufferReviewComment(
-    path: string,
-    startLine: number,
-    endLine: number,
-    message: string
-  ) {
+  async bufferReviewComment(path: string, startLine: number, endLine: number, message: string) {
     message = `${COMMENT_GREETING}
 
 ${message}
@@ -205,14 +171,10 @@ ${COMMENT_TAG}`
         pull_number: pullNumber
       })
 
-      const pendingReview = reviews.data.find(
-        (review: any) => review.state === 'PENDING'
-      )
+      const pendingReview = reviews.data.find((review: any) => review.state === 'PENDING')
 
       if (pendingReview) {
-        info(
-          `Deleting pending review for PR #${pullNumber} id: ${pendingReview.id}`
-        )
+        info(`Deleting pending review for PR #${pullNumber} id: ${pendingReview.id}`)
         try {
           await octokit.pulls.deletePendingReview({
             owner: repo.owner,
@@ -257,12 +219,7 @@ ${statusMsg}
       return
     }
     for (const comment of this.reviewCommentsBuffer) {
-      const comments = await this.getCommentsAtRange(
-        pullNumber,
-        comment.path,
-        comment.startLine,
-        comment.endLine
-      )
+      const comments = await this.getCommentsAtRange(pullNumber, comment.path, comment.startLine, comment.endLine)
       for (const c of comments) {
         if (c.body.includes(COMMENT_TAG)) {
           info(
@@ -309,9 +266,7 @@ ${statusMsg}
         pull_number: pullNumber,
         // eslint-disable-next-line camelcase
         commit_id: commitId,
-        comments: this.reviewCommentsBuffer.map(comment =>
-          generateCommentData(comment)
-        )
+        comments: this.reviewCommentsBuffer.map(comment => generateCommentData(comment))
       })
 
       info(
@@ -329,9 +284,7 @@ ${statusMsg}
         body
       })
     } catch (e) {
-      warning(
-        `Failed to create review: ${e}. Falling back to individual comments.`
-      )
+      warning(`Failed to create review: ${e}. Falling back to individual comments.`)
       await this.deletePendingReview(pullNumber)
       let commentCounter = 0
       for (const comment of this.reviewCommentsBuffer) {
@@ -355,18 +308,12 @@ ${statusMsg}
         }
 
         commentCounter++
-        info(
-          `Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`
-        )
+        info(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`)
       }
     }
   }
 
-  async reviewCommentReply(
-    pullNumber: number,
-    topLevelComment: any,
-    message: string
-  ) {
+  async reviewCommentReply(pullNumber: number, topLevelComment: any, message: string) {
     const reply = `${COMMENT_GREETING}
 
 ${message}
@@ -403,10 +350,7 @@ ${COMMENT_REPLY_TAG}
     try {
       if (topLevelComment.body.includes(COMMENT_TAG)) {
         // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-        const newBody = topLevelComment.body.replace(
-          COMMENT_TAG,
-          COMMENT_REPLY_TAG
-        )
+        const newBody = topLevelComment.body.replace(COMMENT_TAG, COMMENT_REPLY_TAG)
         await octokit.pulls.updateReviewComment({
           owner: repo.owner,
           repo: repo.repo,
@@ -420,55 +364,30 @@ ${COMMENT_REPLY_TAG}
     }
   }
 
-  async getCommentsWithinRange(
-    pullNumber: number,
-    path: string,
-    startLine: number,
-    endLine: number
-  ) {
+  async getCommentsWithinRange(pullNumber: number, path: string, startLine: number, endLine: number) {
     const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
       (comment: any) =>
         comment.path === path &&
         comment.body !== '' &&
-        ((comment.start_line !== undefined &&
-          comment.start_line >= startLine &&
-          comment.line <= endLine) ||
+        ((comment.start_line !== undefined && comment.start_line >= startLine && comment.line <= endLine) ||
           (startLine === endLine && comment.line === endLine))
     )
   }
 
-  async getCommentsAtRange(
-    pullNumber: number,
-    path: string,
-    startLine: number,
-    endLine: number
-  ) {
+  async getCommentsAtRange(pullNumber: number, path: string, startLine: number, endLine: number) {
     const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
       (comment: any) =>
         comment.path === path &&
         comment.body !== '' &&
-        ((comment.start_line !== undefined &&
-          comment.start_line === startLine &&
-          comment.line === endLine) ||
+        ((comment.start_line !== undefined && comment.start_line === startLine && comment.line === endLine) ||
           (startLine === endLine && comment.line === endLine))
     )
   }
 
-  async getCommentChainsWithinRange(
-    pullNumber: number,
-    path: string,
-    startLine: number,
-    endLine: number,
-    tag = ''
-  ) {
-    const existingComments = await this.getCommentsWithinRange(
-      pullNumber,
-      path,
-      startLine,
-      endLine
-    )
+  async getCommentChainsWithinRange(pullNumber: number, path: string, startLine: number, endLine: number, tag = '') {
+    const existingComments = await this.getCommentsWithinRange(pullNumber, path, startLine, endLine)
     // find all top most comments
     const topLevelComments = []
     for (const comment of existingComments) {
@@ -481,10 +400,7 @@ ${COMMENT_REPLY_TAG}
     let chainNum = 0
     for (const topLevelComment of topLevelComments) {
       // get conversation chain
-      const chain = await this.composeCommentChain(
-        existingComments,
-        topLevelComment
-      )
+      const chain = await this.composeCommentChain(existingComments, topLevelComment)
       if (chain && chain.includes(tag)) {
         chainNum += 1
         allChains += `Conversation Chain ${chainNum}:
@@ -501,9 +417,7 @@ ${chain}
       .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
       .map((cmt: any) => `${cmt.user.login}: ${cmt.body}`)
 
-    conversationChain.unshift(
-      `${topLevelComment.user.login}: ${topLevelComment.body}`
-    )
+    conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`)
 
     return conversationChain.join('\n---\n')
   }
@@ -511,14 +425,8 @@ ${chain}
   async getCommentChain(pullNumber: number, comment: any) {
     try {
       const reviewComments = await this.listReviewComments(pullNumber)
-      const topLevelComment = await this.getTopLevelComment(
-        reviewComments,
-        comment
-      )
-      const chain = await this.composeCommentChain(
-        reviewComments,
-        topLevelComment
-      )
+      const topLevelComment = await this.getTopLevelComment(reviewComments, comment)
+      const chain = await this.composeCommentChain(reviewComments, topLevelComment)
       return {chain, topLevelComment}
     } catch (e) {
       warning(`Failed to get conversation chain: ${e}`)
@@ -533,9 +441,7 @@ ${chain}
     let topLevelComment = comment
 
     while (topLevelComment.in_reply_to_id) {
-      const parentComment = reviewComments.find(
-        (cmt: any) => cmt.id === topLevelComment.in_reply_to_id
-      )
+      const parentComment = reviewComments.find((cmt: any) => cmt.id === topLevelComment.in_reply_to_id)
 
       if (parentComment) {
         topLevelComment = parentComment
@@ -717,10 +623,7 @@ ${chain}
   }
 
   // given a list of commit ids provide the highest commit id that has been reviewed
-  getHighestReviewedCommitId(
-    commitIds: string[],
-    reviewedCommitIds: string[]
-  ): string {
+  getHighestReviewedCommitId(commitIds: string[], reviewedCommitIds: string[]): string {
     for (let i = commitIds.length - 1; i >= 0; i--) {
       if (reviewedCommitIds.includes(commitIds[i])) {
         return commitIds[i]
@@ -782,10 +685,7 @@ ${commentBody}`
     // remove the in-progress status if the marker exists
     // otherwise do nothing
     if (start !== -1 && end !== -1) {
-      return (
-        commentBody.substring(0, start) +
-        commentBody.substring(end + IN_PROGRESS_END_TAG.length)
-      )
+      return commentBody.substring(0, start) + commentBody.substring(end + IN_PROGRESS_END_TAG.length)
     }
     return commentBody
   }
