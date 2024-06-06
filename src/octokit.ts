@@ -6,13 +6,22 @@ import {retry} from '@octokit/plugin-retry'
 import {throttling} from '@octokit/plugin-throttling'
 
 import dotenv from 'dotenv'
+
+// ローカル開発要。process.env.GITHUB_TOKEN will be loaded from .env
 if (!process.env.GITHUB_TOKEN) {
-  dotenv.config({override: false}) // process.env.GITHUB_TOKEN will be loaded from .env when Local Dev Env
+  dotenv.config({override: false})
 }
+
+// ダミー値でも良いのでGITHUB_ACTIONに何かセットしないと下記シングルトン生成が失敗するのでダミーセット
+if (process.env.JEST_TEST) {
+  process.env.GITHUB_ACTION = '1'
+}
+
 const token = getInput('token') || process.env.GITHUB_TOKEN
 
 const RetryAndThrottlingOctokit = Octokit.plugin(throttling, retry)
 
+/// シングルトンの生成。環境変数 GITHUB_TOKEN (, GITHUB_ACTION)が必要
 export const octokit = new RetryAndThrottlingOctokit({
   auth: `token ${token}`,
   throttle: {
