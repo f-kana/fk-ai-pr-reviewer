@@ -22,6 +22,7 @@ import {octokit} from './octokit'
 import {type Options} from './options'
 import {type Prompts} from './prompts'
 import {getTokenCount} from './tokenizer'
+import { Octokit } from '@octokit/action'
 
 // eslint-disable-next-line camelcase
 const context = github_context
@@ -137,56 +138,7 @@ export const codeReview = async (lightBot: Bot, heavyBot: Bot, options: Options,
   // find hunks to review
   const filteredFiles: Array<[string, string, string, Array<[number, number, string]>] | null> = await Promise.all(
     filterSelectedFiles.map(file =>
-      githubConcurrencyLimit(async () => {
-        // retrieve file contents
-        let fileContent = ''
-        if (context.payload.pull_request == null) {
-          warning('Skipped: context.payload.pull_request is null')
-          return null
-        }
-        try {
-          const contents = await octokit.repos.getContent({
-            owner: repo.owner,
-            repo: repo.repo,
-            path: file.filename,
-            ref: context.payload.pull_request.base.sha
-          })
-          if (contents.data != null) {
-            if (!Array.isArray(contents.data)) {
-              if (contents.data.type === 'file' && contents.data.content != null) {
-                fileContent = Buffer.from(contents.data.content, 'base64').toString()
-              }
-            }
-          }
-        } catch (e: any) {
-          warning(`Failed to get file contents: ${e as string}. This is OK if it's a new file.`)
-        }
-
-        const fileDiff = file.patch || ''
-
-        const patches: Array<[number, number, string]> = []
-        for (const patch of splitPatch(file.patch)) {
-          const patchLines = patchStartEndLine(patch)
-          if (patchLines == null) {
-            continue
-          }
-          const hunksStr = _formatHunks(patch)
-          if (hunksStr == null) {
-            continue
-          }
-          patches.push([patchLines.newHunk.startLine, patchLines.newHunk.endLine, hunksStr])
-        }
-        if (patches.length > 0) {
-          return [file.filename, fileContent, fileDiff, patches] as [
-            string,
-            string,
-            string,
-            Array<[number, number, string]>
-          ]
-        } else {
-          return null
-        }
-      })
+      githubConcurrencyLimit(() => retrieveFileDiffAndPatches(file, context, octokit, repo))
     )
   )
 
@@ -353,7 +305,8 @@ ${filename}: ${summary}
         const patchTokens = getTokenCount(patch)
         if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
           info(
-            `only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`
+            `only packing ${patchesToPack} / ${patches.length} patches, ` +
+              `tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`
           )
           break
         }
@@ -370,7 +323,8 @@ ${filename}: ${summary}
         // see if we can pack more patches into this request
         if (patchesPacked >= patchesToPack) {
           info(
-            `unable to pack more patches into this request, packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`
+            `unable to pack more patches into this request, ` +
+              `packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`
           )
           if (options.debug) {
             info(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`)
@@ -506,6 +460,54 @@ const _filterFiles = (files: any[], options: any) => {
   return {filterSelectedFiles, filterIgnoredFiles}
 }
 
+const retrieveFileDiffAndPatches = async (
+  file: any,
+  _githubContext: any,
+  _octokit: Octokit,
+  _repo: {owner: string; repo: string; [key: string]: any}
+): Promise<[string, string, string, Array<[number, number, string]>] | null> => {
+  // retrieve file contents
+  let fileContent = ''
+  if (context.payload.pull_request == null) {
+    warning('Skipped: context.payload.pull_request is null')
+    return null
+  }
+  try {
+    const contents = await _octokit.repos.getContent({
+      owner: _repo.owner,
+      repo: _repo.repo,
+      path: file.filename,
+      ref: _githubContext.payload.pull_request.base.sha
+    })
+    if (contents.data != null) {
+      if (!Array.isArray(contents.data)) {
+        if (contents.data.type === 'file' && contents.data.content != null) {
+          fileContent = Buffer.from(contents.data.content, 'base64').toString()
+        }
+      }
+    }
+  } catch (e: any) {
+    warning(`Failed to get file contents: ${e as string}. This is OK if it's a new file.`)
+  }
+
+  const fileDiff = file.patch || ''
+
+  const patches: Array<[number, number, string]> = []
+  for (const patch of splitPatch(file.patch)) {
+    const patchLines = patchStartEndLine(patch)
+    if (patchLines == null) {
+      continue
+    }
+    const hunksStr = _formatHunks(patch)
+    if (hunksStr == null) {
+      continue
+    }
+    patches.push([patchLines.newHunk.startLine, patchLines.newHunk.endLine, hunksStr])
+  }
+
+  return [file.filename, fileContent, fileDiff, patches]
+}
+
 const _formatHunks = (patch: string): string | null => {
   const hunks = parsePatch(patch)
   if (hunks == null) {
@@ -548,7 +550,7 @@ ${
 const _processReleaseNotes = async (
   options: Options,
   inputs: Inputs,
-  context: any,
+  _githubContext: any,
   commenter: Commenter,
   heavyBot: Bot,
   prompts: Prompts
@@ -562,7 +564,7 @@ const _processReleaseNotes = async (
       let message = '### Summary by CodeRabbit\n\n'
       message += releaseNotesResponse
       try {
-        await commenter.updateDescription(context.payload.pull_request.number, message)
+        await commenter.updateDescription(_githubContext.payload.pull_request.number, message)
       } catch (e: any) {
         warning(`release notes: error from github: ${e.message as string}`)
       }
@@ -820,15 +822,19 @@ function parseReview(response: string, patches: Array<[number, number, string]>,
 
       if (!withinPatch) {
         if (bestPatchStartLine !== -1 && bestPatchEndLine !== -1) {
-          review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.startLine}-${review.endLine}]
-
-${review.comment}`
+          review.comment =
+            `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap.` +
+            ` Original lines [${review.startLine}-${review.endLine}]\n` +
+            `\n` +
+            `${review.comment}`
           review.startLine = bestPatchStartLine
           review.endLine = bestPatchEndLine
         } else {
-          review.comment = `> Note: This review was outside of the patch, but no patch was found that overlapped with it. Original lines [${review.startLine}-${review.endLine}]
-
-${review.comment}`
+          review.comment =
+            `> Note: This review was outside of the patch, but no patch was found that overlapped with it.` +
+            ` Original lines [${review.startLine}-${review.endLine}]\n` +
+            `\n` +
+            `${review.comment}`
           review.startLine = patches[0][0]
           review.endLine = patches[0][1]
         }
