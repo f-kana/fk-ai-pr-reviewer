@@ -23,7 +23,6 @@ describe('Commenter tests', () => {
     expect(result).toBe('hello\n\nof AI Code Reviewer')
   })
   it('getRawSummary', () => {
-
     const commenter = new Commenter()
     const result = commenter.getRawSummary(content2)
     expect(result).toBe('\nJapan\n')

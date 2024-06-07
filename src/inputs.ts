@@ -5,14 +5,14 @@ export class Inputs {
   description: string
   rawSummary: string
   shortSummary: string
-  filename: string
+  filename: string // review-comment.ts（PRへのレビューコメントの新規作成時）でのみ使われる? codeReview -> doReviewでも使われる？
   fileContent: string
   fileDiff: string
   patches: string
   diff: string
   commentChain: string
   comment: string
-  relatedIssueTitleAndBody: string
+  linkedIssueTitleAndBody: string
 
   constructor(
     systemMessage = '',
@@ -27,7 +27,7 @@ export class Inputs {
     diff = '(no diff)',
     commentChain = '(no other comments on this patch)',
     comment = '(no comment provided)',
-    relatedIssueTitleAndBody = '(no issue is associated with this PR)'
+    linkedIssueTitleAndBody = '(no issue is linked with this PR)'
   ) {
     this.systemMessage = systemMessage
     this.title = title
@@ -41,7 +41,7 @@ export class Inputs {
     this.diff = diff
     this.commentChain = commentChain
     this.comment = comment
-    this.relatedIssueTitleAndBody = relatedIssueTitleAndBody
+    this.linkedIssueTitleAndBody = linkedIssueTitleAndBody
   }
 
   clone(): Inputs {
@@ -58,7 +58,7 @@ export class Inputs {
       this.diff,
       this.commentChain,
       this.comment,
-      this.relatedIssueTitleAndBody
+      this.linkedIssueTitleAndBody
     )
   }
 
@@ -78,7 +78,7 @@ export class Inputs {
       ['$diff', this.diff],
       ['$comment_chain', this.commentChain],
       ['$comment', this.comment],
-      ['$relatedIssueTitleAndBody', this.relatedIssueTitleAndBody]
+      ['$linkedIssueTitleAndBody', this.linkedIssueTitleAndBody]
     ]
 
     for (const [searchValue, replaceValue] of replacements) {

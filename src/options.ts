@@ -100,6 +100,8 @@ export class Options {
   }
 }
 
+/// GHA, OpenAI APIのオプション構築の基底クラス
+/// コード整理のため抽象クラスに切り出してみたが、あまり意味はなかったので後で消すかも。
 abstract class OptionBuilder {
   abstract build(): void
 }

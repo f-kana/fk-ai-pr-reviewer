@@ -8,6 +8,7 @@ import {error, info, warning} from '@actions/core'
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
 import {type Bot} from './bot'
+import { Octokit } from '@octokit/action'
 import {
   Commenter,
   COMMENT_REPLY_TAG,
@@ -22,7 +23,9 @@ import {octokit} from './octokit'
 import {type Options} from './options'
 import {type Prompts} from './prompts'
 import {getTokenCount} from './tokenizer'
-import { Octokit } from '@octokit/action'
+import {OctokitWrapper} from './octokit-wrapper'
+import {GhPrWrapper, GhIssueWrapper, GhIssueable} from './gh-issueable-wrapper'
+
 
 // eslint-disable-next-line camelcase
 const context = github_context
@@ -45,11 +48,23 @@ export const codeReview = async (lightBot: Bot, heavyBot: Bot, options: Options,
     warning('Skipped: context.payload.pull_request is null')
     return
   }
+  const prWrapper = new GhPrWrapper(context.payload.pull_request as GhIssueable)
+  // 以下、context.payload.pull_requestはほぼprWrapperに置き換え可能なはずだが、一旦放置。
 
   const inputs: Inputs = new Inputs()
-  inputs.title = context.payload.pull_request.title
+
+  // Title, Body
+  inputs.title = prWrapper.title
   if (context.payload.pull_request.body != null) {
     inputs.description = commenter.getDescription(context.payload.pull_request.body)
+  }
+
+  // Related Issue
+  if (prWrapper.linkedIssueNumber) {
+    const octokitWrapper = new OctokitWrapper(octokit, repo.owner, repo.repo)
+    const issue = await octokitWrapper.getIssue({issue_number: prWrapper.linkedIssueNumber})
+    const issueWrapper = new GhIssueWrapper(issue)
+    inputs.linkedIssueTitleAndBody = issueWrapper.titleAndBody
   }
 
   // if the description contains ignore_keyword, skip

@@ -6,15 +6,15 @@ describe('inputs tests', () => {
     const inputs = new Inputs()
     expect(inputs.systemMessage).toBe('')
     expect(inputs.title).toBe('(no title provided)')
-    expect(inputs.relatedIssueTitleAndBody).toBe('(no issue is associated with this PR)')
+    expect(inputs.linkedIssueTitleAndBody).toBe('(no issue is linked with this PR)')
   })
   it('renderメソッドでプレースホルダが置換される', () => {
     const inputs = new Inputs()
     inputs.rawSummary = 'hello' // will be replaced
     inputs.shortSummary = '' // placeholder will remain
-    // relatedIssueTitleAndBody: default value will appear
-    const content = '1: $raw_summary, 2: $short_summary, 3: $relatedIssueTitleAndBody'
-    const expected = '1: hello, 2: $short_summary, 3: (no issue is associated with this PR)'
+    // linkededIssueTitleAndBody: default value will appear
+    const content = '1: $raw_summary, 2: $short_summary, 3: $linkedIssueTitleAndBody'
+    const expected = '1: hello, 2: $short_summary, 3: (no issue is linked with this PR)'
     expect(inputs.render(content)).toBe(expected)
   })
 })

@@ -23,6 +23,8 @@ export const handleReviewComment = async (heavyBot: Bot, options: Options, promp
   const commenter: Commenter = new Commenter()
   const inputs: Inputs = new Inputs()
 
+  // PRにレビューコメントが追加/編集/削除されたとき 以外はSkip
+  // 後段のif文でcreate以外もSkip
   if (context.eventName !== 'pull_request_review_comment') {
     warning(`Skipped: ${context.eventName} is not a pull_request_review_comment event`)
     return

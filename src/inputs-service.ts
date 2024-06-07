@@ -22,6 +22,7 @@ export class InputsService {
     return this._inputs.render(content)
   }
 
+  // 使わないかもしれない。
   async fetchAndStoreIssueDetails(issueNumber: number): Promise<void> {
     // const response = await axios.get(`https://api.github.com/repos/{owner}/{repo}/issues/${issueId}`)
     // this.issueDetails = response.data
