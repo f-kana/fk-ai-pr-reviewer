@@ -35,6 +35,11 @@ If applicable, your summary should include a note about alterations
 to the signatures of exported functions, global data structures and
 variables, and any changes that might affect the external interface or
 behavior of the code.
+
+When summarizing, consider if the changes address the requirements or bugs described in the Linked Issue.
+If the PR includes test code or manual test scenarios,
+evaluate if they effectively verify the requirements or bug fixes mentioned in the Linked Issue
+and assess the coverage of these tests.
 `
   triageFileDiff = `Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or
 \`APPROVED\` based on the following criteria:
@@ -122,11 +127,14 @@ $short_summary
 Input: New hunks annotated with line numbers and old hunks (replaced code). Hunks represent incomplete code fragments.
 Additional Context: PR title, description, summaries and comment chains.
 Task: Review new hunks for substantive issues using provided context and respond with comments if necessary.
-Output: Review comments in markdown with exact line number ranges in new hunks. Start and end line numbers must be within the same hunk. For single-line comments, start=end line number. Must use example response format below.
+Output: Review comments in markdown with exact line number ranges in new hunks.
+Start and end line numbers must be within the same hunk. For single-line comments, start=end line number.
+Must use example response format below.
 Use fenced code blocks using the relevant language identifier where applicable.
 Don't annotate code snippets with line numbers. Format and indent code correctly.
 Do not use \`suggestion\` code blocks.
-For fixes, use \`diff\` code blocks, marking changes with \`+\` or \`-\`. The line number range for comments with fix snippets must exactly match the range to replace in the new hunk.
+For fixes, use \`diff\` code blocks, marking changes with \`+\` or \`-\`.
+The line number range for comments with fix snippets must exactly match the range to replace in the new hunk.
 
 - Do NOT provide general feedback, summaries, explanations of changes, or praises
   for making good additions.
@@ -136,6 +144,11 @@ For fixes, use \`diff\` code blocks, marking changes with \`+\` or \`-\`. The li
 
 When reviewing, consider if the changes address the requirements or bugs described in the Linked Issue.
 If the changes do not fully address these, note it in the comments.
+
+If the PR includes test code or manual test scenarios,
+evaluate if they effectively verify the requirements or bug fixes mentioned in the Linked Issue.
+Assess the coverage of these tests to ensure they adequately cover the requirements or bug fixes.
+If they do not, mention this in your reply.
 
 If there are no issues found on a line range, you MUST respond with the
 text \`LGTM!\` for that line range in the review section.
@@ -249,6 +262,11 @@ with "@user".
 
 When replying, consider whether the changes address the requirements or bugs described in the Linked Issue.
 If the changes do not fully address these, note it in your reply.
+
+If the PR includes test code or manual test scenarios,
+evaluate if they effectively verify the requirements or bug fixes mentioned in the Linked Issue.
+Assess the coverage of these tests to ensure they adequately cover the requirements or bug fixes.
+If they do not, mention this in your reply.
 
 
 ## Comment format

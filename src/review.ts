@@ -239,6 +239,7 @@ export const codeReview = async (lightBot: Bot, heavyBot: Bot, options: Options,
 
   const summaryPromises = []
   const skippedFiles = []
+  // ファイルの個数分forを実行している（差分の個数ではない）
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
     if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
       summaryPromises.push(openaiConcurrencyLimit(async () => await doSummary(filename, fileContent, fileDiff)))
@@ -475,6 +476,8 @@ const _filterFiles = (files: any[], options: any) => {
   return {filterSelectedFiles, filterIgnoredFiles}
 }
 
+/// 注）１ファイル毎に実行される。
+/// １ファイルに複数箇所差分がある場合、fileDiffは全ての差分を表現するGitの差分フォーマット文字列、patchesは差分箇所個数分のArray
 const retrieveFileDiffAndPatches = async (
   file: any,
   _githubContext: any,
@@ -505,7 +508,7 @@ const retrieveFileDiffAndPatches = async (
     warning(`Failed to get file contents: ${e as string}. This is OK if it's a new file.`)
   }
 
-  const fileDiff = file.patch || ''
+  const fileDiff: string = file.patch || ''
 
   const patches: Array<[number, number, string]> = []
   for (const patch of splitPatch(file.patch)) {
