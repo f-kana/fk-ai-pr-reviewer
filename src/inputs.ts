@@ -5,7 +5,7 @@ export class Inputs {
   description: string
   rawSummary: string
   shortSummary: string
-  filename: string // review-comment.ts（PRへのレビューコメントの新規作成時）でのみ使われる? codeReview -> doReviewでも使われる？
+  filename: string
   fileContent: string
   fileDiff: string
   patches: string
