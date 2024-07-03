@@ -17,9 +17,9 @@ describe('octokit-helpers tests', () => {
   it('Pull Request #6の各種プロパティが取得できる。(Related Issueは無効化)', () => {
     const pr6 = GhTestDataLoaderForPr6ForIssue5.build()
 
-    // Related Issueが無い場合をテストしたいので無効化
+    // Related Issueが無い場合をテストしたいので無効化。Bodyが空でもエラーが起きないことを確認する。
     pr6.data.title = 'small update'
-    pr6.data.body = 'Update for a bugfix.'
+    pr6.data.body = null
     pr6.data.head.ref = 'bugfix/dummy'
 
     const prWrapper = new GhPrWrapper(pr6)
