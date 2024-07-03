@@ -69,6 +69,7 @@ export class GhPrWrapper extends GhIssueableWrapper {
     return this._issueable.base.ref
   }
 
+  // 使ってない(気がする)。OctokitでWrapできているのでURLそのものの生成は不要か。
   get linkedIssueUrl(): string | null {
     if (!this.linkedIssueNumber) {
       return null
@@ -91,9 +92,9 @@ export class GhPrWrapper extends GhIssueableWrapper {
     return this._extractIssueableNumber(this.title)
   }
 
-  /// #12のような文字列を関連Issueと見做して検出し、12を返す。最初にHitしたもののみが対象。
+  /// #12のような文字列を関連Issueと見做して検出し、12を返す。最初にHitしたもののみが対象。Bodyはnullか空文字の可能性がある。
   private get _linkedIssueNumberFromBody(): number | null {
-    return this._extractIssueableNumber(this.body)
+    return this.body ? this._extractIssueableNumber(this.body) : null
   }
 
   private _extractIssueableNumber(text: string): number | null {
