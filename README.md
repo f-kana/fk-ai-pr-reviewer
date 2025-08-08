@@ -110,15 +110,19 @@ jobs:
   OpenAI API if you have multiple. Please add this key to your GitHub Action
   secrets.
 
-### Models: `gpt-4` and `gpt-3.5-turbo`
+### Models: `gpt-5`, `gpt-4o`, `gpt-4` and `gpt-3.5-turbo`
 
 Recommend using `gpt-3.5-turbo` for lighter tasks such as summarizing the
-changes (`openai_light_model` in configuration) and `gpt-4` for more complex
+changes (`openai_light_model` in configuration) and `gpt-4o` or `gpt-5` for more complex
 review and commenting tasks (`openai_heavy_model` in configuration).
 
+Latest model `gpt-5` provides enhanced reasoning capabilities and larger context 
+windows (200K tokens) for more comprehensive code analysis.
+
 Costs: `gpt-3.5-turbo` is dirt cheap. `gpt-4` is orders of magnitude more
-expensive, but the results are vastly superior. We are typically spending $20 a
-day for a 20 developer team with `gpt-4` based review and commenting.
+expensive, but the results are vastly superior. `gpt-5` offers the best quality 
+but at premium pricing. We are typically spending $20 a day for a 20 developer 
+team with `gpt-4` based review and commenting.
 
 ### Prompts & Configuration
 
