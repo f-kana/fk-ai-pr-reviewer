@@ -110,10 +110,10 @@ jobs:
   OpenAI API if you have multiple. Please add this key to your GitHub Action
   secrets.
 
-### Models: `gpt-4` and `gpt-3.5-turbo`
+### Models: `gpt-4o`, `gpt-4` and `gpt-3.5-turbo`
 
 Recommend using `gpt-3.5-turbo` for lighter tasks such as summarizing the
-changes (`openai_light_model` in configuration) and `gpt-4` for more complex
+changes (`openai_light_model` in configuration) and `gpt-4o` or `gpt-4` for more complex
 review and commenting tasks (`openai_heavy_model` in configuration).
 
 Costs: `gpt-3.5-turbo` is dirt cheap. `gpt-4` is orders of magnitude more
