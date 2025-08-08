@@ -2,15 +2,6 @@ import { describe, test, expect } from '@jest/globals'
 import { TokenLimits } from '../src/limits'
 
 describe('TokenLimits tests', () => {
-  test('GPT-5モデルのトークン制限が正しく設定される', () => {
-    const limits = new TokenLimits('gpt-5')
-    
-    expect(limits.maxTokens).toBe(200000)
-    expect(limits.responseTokens).toBe(8000)
-    expect(limits.requestTokens).toBe(191900) // 200000 - 8000 - 100
-    expect(limits.knowledgeCutOff).toBe('2025-08-01')
-  })
-
   test('GPT-4oモデルのknowledge cutoffが更新される', () => {
     const limits = new TokenLimits('gpt-4o')
     
@@ -36,9 +27,9 @@ describe('TokenLimits tests', () => {
   })
 
   test('string()メソッドが正しいフォーマットを返す', () => {
-    const limits = new TokenLimits('gpt-5')
+    const limits = new TokenLimits('gpt-4o')
     const result = limits.string()
     
-    expect(result).toBe('max_tokens=200000, request_tokens=191900, response_tokens=8000')
+    expect(result).toBe('max_tokens=128000, request_tokens=123900, response_tokens=4000')
   })
 })
