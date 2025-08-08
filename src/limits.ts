@@ -3,7 +3,9 @@ export class TokenLimits {
    * トークン数の制限値は、入力と出力の合計。
    * GPT-4: 8,192
    * GPT-4o: 128,000
+   * GPT-5: 400,000
    * Refs: https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4
+   * Refs: https://platform.openai.com/docs/models/gpt-5
    */
   maxTokens: number
   requestTokens: number
@@ -12,13 +14,18 @@ export class TokenLimits {
 
   constructor(model = 'gpt-3.5-turbo') {
     // Update knowledge cutoff for newer models
-    if (model === 'gpt-4o') {
+    if (model === 'gpt-5') {
+      this.knowledgeCutOff = '2024-10-01'
+    } else if (model === 'gpt-4o') {
       this.knowledgeCutOff = '2024-04-01'
     } else {
       this.knowledgeCutOff = '2021-09-01'
     }
 
-    if (model === 'gpt-4-32k') {
+    if (model === 'gpt-5') {
+      this.maxTokens = 400000
+      this.responseTokens = 128000
+    } else if (model === 'gpt-4-32k') {
       this.maxTokens = 32600
       this.responseTokens = 4000
     } else if (model === 'gpt-3.5-turbo-16k') {
