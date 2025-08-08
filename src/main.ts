@@ -19,7 +19,9 @@ async function run(): Promise<void> {
   try {
     lightBot = new Bot(options, new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits))
   } catch (e: any) {
-    warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`)
+    const errorMessage = `Failed to create summary bot, please check your openai_api_key: ${e}`
+    setFailed(errorMessage)
+    warning(`${errorMessage}, backtrace: ${e.stack}`)
     return
   }
 
@@ -27,7 +29,9 @@ async function run(): Promise<void> {
   try {
     heavyBot = new Bot(options, new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits))
   } catch (e: any) {
-    warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`)
+    const errorMessage = `Failed to create review bot, please check your openai_api_key: ${e}`
+    setFailed(errorMessage)
+    warning(`${errorMessage}, backtrace: ${e.stack}`)
     return
   }
 
@@ -51,10 +55,14 @@ async function run(): Promise<void> {
 
 process
   .on('unhandledRejection', (reason, p) => {
-    warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
+    const errorMessage = `Unhandled Rejection at Promise: ${reason}`
+    setFailed(errorMessage)
+    warning(`${errorMessage}, promise is ${p}`)
   })
   .on('uncaughtException', (e: any) => {
-    warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
+    const errorMessage = `Uncaught Exception thrown: ${e}`
+    setFailed(errorMessage)
+    warning(`${errorMessage}, backtrace: ${e.stack}`)
   })
 
 await run()

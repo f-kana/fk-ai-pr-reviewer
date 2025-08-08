@@ -45,7 +45,6 @@
     "@typescript-eslint/parser": "^5.59.6",
     "@vercel/ncc": "^0.36.1",
     "babel-jest": "^27.5.1",
-    "chatgpt": "^5.2.5",
     "eslint": "^8.41.0",
     "eslint-config-standard-with-typescript": "^36.0.0",
     "eslint-plugin-github": "^4.6.1",

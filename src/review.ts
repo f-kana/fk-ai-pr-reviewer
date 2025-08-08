@@ -3,7 +3,7 @@
  * PR全体に対してレビューコメントを生成する
  */
 
-import {error, info, warning} from '@actions/core'
+import {error, info, warning, setFailed} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
@@ -207,7 +207,10 @@ export const codeReview = async (lightBot: Bot, heavyBot: Bot, options: Options,
       const [summarizeResp] = await lightBot.chat(summarizePrompt, {})
 
       if (summarizeResp === '') {
-        info('summarize: nothing obtained from openai')
+        const errorMessage = 'summarize: nothing obtained from openai'
+        // OpenAI レスポンスがない場合もCI失敗とする
+        setFailed(errorMessage)
+        info(errorMessage)
         summariesFailed.push(`${filename} (nothing obtained from openai)`)
         return null
       } else {
@@ -231,7 +234,10 @@ export const codeReview = async (lightBot: Bot, heavyBot: Bot, options: Options,
         return [filename, summarizeResp, true]
       }
     } catch (e: any) {
-      warning(`summarize: error from openai: ${e as string}`)
+      const errorMessage = `summarize: error from openai: ${e as string}`
+      // OpenAI APIエラーはCI失敗とする
+      setFailed(errorMessage)
+      warning(errorMessage)
       summariesFailed.push(`${filename} (error from openai: ${e as string})})`)
       return null
     }
@@ -266,7 +272,10 @@ ${filename}: ${summary}
       // ask chatgpt to summarize the summaries
       const [summarizeResp] = await heavyBot.chat(prompts.renderSummarizeChangesets(inputs), {})
       if (summarizeResp === '') {
-        warning('summarize: nothing obtained from openai')
+        const errorMessage = 'summarize: nothing obtained from openai'
+        // OpenAI レスポンスがない場合もCI失敗とする
+        setFailed(errorMessage)
+        warning(errorMessage)
       } else {
         inputs.rawSummary = summarizeResp
       }
@@ -276,7 +285,10 @@ ${filename}: ${summary}
   // final summary
   const [summarizeFinalResponse] = await heavyBot.chat(prompts.renderSummarize(inputs), {})
   if (summarizeFinalResponse === '') {
-    info('summarize: nothing obtained from openai')
+    const errorMessage = 'summarize: nothing obtained from openai'
+    // OpenAI レスポンスがない場合もCI失敗とする  
+    setFailed(errorMessage)
+    info(errorMessage)
   }
 
   await _processReleaseNotes(options, inputs, context, commenter, heavyBot, prompts)
@@ -396,7 +408,10 @@ ${commentChain}
         try {
           const [response] = await heavyBot.chat(prompts.renderReviewFileDiff(ins), {})
           if (response === '') {
-            info('review: nothing obtained from openai')
+            const errorMessage = 'review: nothing obtained from openai'
+            // OpenAI レスポンスがない場合もCI失敗とする
+            setFailed(errorMessage)
+            info(errorMessage)
             reviewsFailed.push(`${filename} (no response)`)
             return
           }
@@ -577,7 +592,10 @@ const _processReleaseNotes = async (
     // final release notes
     const [releaseNotesResponse] = await heavyBot.chat(prompts.renderSummarizeReleaseNotes(inputs), {})
     if (releaseNotesResponse === '') {
-      info('release notes: nothing obtained from openai')
+      const errorMessage = 'release notes: nothing obtained from openai'
+      // OpenAI レスポンスがない場合もCI失敗とする
+      setFailed(errorMessage)
+      info(errorMessage)
     } else {
       let message = '### Summary by CodeRabbit\n\n'
       message += releaseNotesResponse
