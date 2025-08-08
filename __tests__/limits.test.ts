@@ -7,7 +7,7 @@ describe('TokenLimits tests', () => {
 
     expect(limits.maxTokens).toBe(400000)
     expect(limits.responseTokens).toBe(128000)
-    expect(limits.knowledgeCutOff).toBe('2024-10-01')
+    expect(limits.knowledgeCutOff).toBe('2024-08-01')
     expect(limits.requestTokens).toBe(400000 - 128000 - 100)
   })
 
