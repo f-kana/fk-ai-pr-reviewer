@@ -1,4 +1,4 @@
-import {OctokitResponse} from '@octokit/types';
+import {OctokitResponse} from '@octokit/types'
 
 /**
  * import {context} from '@actions/github' で得られるcontextについて、
@@ -30,7 +30,8 @@ abstract class GhIssueableWrapper {
   /// 引き数はGitHub APIから取得できるJSON相当のオブジェクト
   // （anyではなくPullRequest型にしたいがimportの仕方がわからない）
   constructor(obj: OctokitResponse<any> | GhIssueable) {
-    if ('data' in obj) { // OctokitResponseの場合
+    if ('data' in obj) {
+      // OctokitResponseの場合
       this._issueable = obj.data as GhIssueable
     } else if (typeof obj === 'object') {
       this._issueable = obj as GhIssueable

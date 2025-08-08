@@ -14,8 +14,8 @@ describe('OpenAIClient', () => {
     })
 
     // buildRequestBodyはprivateメソッドなので、代わりにsendMessageを部分的にテスト
-    const messages = [{ role: 'user' as const, content: 'test' }]
-    
+    const messages = [{role: 'user' as const, content: 'test'}]
+
     // privateメソッドへのアクセスのためのワークアラウンド
     const buildRequestBody = (client as any).buildRequestBody.bind(client)
     const result = buildRequestBody(messages)
@@ -35,8 +35,8 @@ describe('OpenAIClient', () => {
       debug: false
     })
 
-    const messages = [{ role: 'user' as const, content: 'test' }]
-    
+    const messages = [{role: 'user' as const, content: 'test'}]
+
     const buildRequestBody = (client as any).buildRequestBody.bind(client)
     const result = buildRequestBody(messages)
 
@@ -47,7 +47,7 @@ describe('OpenAIClient', () => {
 
   it('should correctly detect GPT-5 variants', () => {
     const models = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5-turbo']
-    
+
     models.forEach(model => {
       const client = new OpenAIClient({
         apiKey: 'test-key',
@@ -58,7 +58,7 @@ describe('OpenAIClient', () => {
         debug: false
       })
 
-      const messages = [{ role: 'user' as const, content: 'test' }]
+      const messages = [{role: 'user' as const, content: 'test'}]
       const buildRequestBody = (client as any).buildRequestBody.bind(client)
       const result = buildRequestBody(messages)
 

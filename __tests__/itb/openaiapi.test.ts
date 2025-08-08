@@ -13,7 +13,7 @@ describe('External Integration Tests (ITb) with OpenAI API', () => {
     it('Just confirm OpenAI API call', async () => {
       const options = new OptionBuilderWithDefaults().build()
       const openaiOptions = new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
-      
+
       const openaiClient = new OpenAIClient({
         apiKey: process.env.OPENAI_API_KEY!,
         apiOrg: process.env.OPENAI_API_ORG,
@@ -23,7 +23,7 @@ describe('External Integration Tests (ITb) with OpenAI API', () => {
         maxTokens: openaiOptions.tokenLimits.responseTokens,
         debug: options.debug
       })
-      
+
       const message = 'Say this is a test!'
 
       const response = await openaiClient.sendMessage(message)

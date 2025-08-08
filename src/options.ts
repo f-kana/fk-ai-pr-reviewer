@@ -1,9 +1,4 @@
-import {
-  getBooleanInput,
-  getInput,
-  getMultilineInput,
-  info
-} from '@actions/core'
+import {getBooleanInput, getInput, getMultilineInput, info} from '@actions/core'
 
 import {minimatch} from 'minimatch'
 import {TokenLimits} from './limits'

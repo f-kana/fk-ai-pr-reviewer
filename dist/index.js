@@ -162,7 +162,7 @@ class OpenAIClient {
     buildHeaders() {
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.options.apiKey}`
+            Authorization: `Bearer ${this.options.apiKey}`
         };
         if (this.options.apiOrg) {
             headers['OpenAI-Organization'] = this.options.apiOrg;
@@ -3825,7 +3825,8 @@ class GhIssueableWrapper {
     /// 引き数はGitHub APIから取得できるJSON相当のオブジェクト
     // （anyではなくPullRequest型にしたいがimportの仕方がわからない）
     constructor(obj) {
-        if ('data' in obj) { // OctokitResponseの場合
+        if ('data' in obj) {
+            // OctokitResponseの場合
             this._issueable = obj.data;
         }
         else if (typeof obj === 'object') {
@@ -4120,7 +4121,7 @@ ${filename}: ${summary}
     const [summarizeFinalResponse] = await heavyBot.chat(prompts.renderSummarize(inputs), {});
     if (summarizeFinalResponse === '') {
         const errorMessage = 'summarize: nothing obtained from openai';
-        // OpenAI レスポンスがない場合もCI失敗とする  
+        // OpenAI レスポンスがない場合もCI失敗とする
         (0,core.setFailed)(errorMessage);
         (0,core.info)(errorMessage);
     }
@@ -4456,12 +4457,14 @@ const _generateReviewStatusMsg = (reviewsFailed, reviewsSkipped, reviewCount, lg
 <details>
 <summary>Tips</summary>
 
-### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41&u=fad245b8b4c7254fe63dd4dcd4d662ace122757e&v=4" alt="Image description" width="20" height="20">  CodeRabbit Bot (\`@coderabbitai\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
+### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41&u=fad245b8b4c7254fe63dd4dcd4d662ace122757e&v=4" alt="Image description" width="20" height="20"> CodeRabbit Bot (\`@coderabbitai\`)
+- Reply on review comments left by this bot to ask follow-up questions. 
+  A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@coderabbitai\` in a reply.
 
 ### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned.
+- The bot may make code suggestions, but please review them carefully before 
+  committing since the line number ranges may be misaligned.
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ### Pausing incremental reviews

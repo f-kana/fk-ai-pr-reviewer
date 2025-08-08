@@ -8,7 +8,7 @@ import {error, info, warning, setFailed} from '@actions/core'
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
 import {type Bot} from './bot'
-import { Octokit } from '@octokit/action'
+import {Octokit} from '@octokit/action'
 import {
   Commenter,
   COMMENT_REPLY_TAG,
@@ -25,7 +25,6 @@ import {type Prompts} from './prompts'
 import {getTokenCount} from './tokenizer'
 import {OctokitWrapper} from './octokit-wrapper'
 import {GhPrWrapper, GhIssueWrapper, GhIssueable} from './gh-issueable-wrapper'
-
 
 // eslint-disable-next-line camelcase
 const context = github_context
@@ -286,7 +285,7 @@ ${filename}: ${summary}
   const [summarizeFinalResponse] = await heavyBot.chat(prompts.renderSummarize(inputs), {})
   if (summarizeFinalResponse === '') {
     const errorMessage = 'summarize: nothing obtained from openai'
-    // OpenAI レスポンスがない場合もCI失敗とする  
+    // OpenAI レスポンスがない場合もCI失敗とする
     setFailed(errorMessage)
     info(errorMessage)
   }
@@ -691,12 +690,14 @@ const _generateReviewStatusMsg = (
 <details>
 <summary>Tips</summary>
 
-### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41&u=fad245b8b4c7254fe63dd4dcd4d662ace122757e&v=4" alt="Image description" width="20" height="20">  CodeRabbit Bot (\`@coderabbitai\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
+### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41&u=fad245b8b4c7254fe63dd4dcd4d662ace122757e&v=4" alt="Image description" width="20" height="20"> CodeRabbit Bot (\`@coderabbitai\`)
+- Reply on review comments left by this bot to ask follow-up questions. 
+  A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@coderabbitai\` in a reply.
 
 ### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned.
+- The bot may make code suggestions, but please review them carefully before 
+  committing since the line number ranges may be misaligned.
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ### Pausing incremental reviews

@@ -24,7 +24,7 @@ export class Bot {
 
     this.options = options
     this.openaiOptions = openaiOptions
-    
+
     // システムメッセージを構築
     const currentDate = new Date().toISOString().split('T')[0]
     this.systemMessage = `${options.systemMessage}
@@ -77,7 +77,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       setFailed(errorMessage)
       throw e
     }
-    
+
     const end = Date.now()
     info(`response: ${JSON.stringify(response)}`)
     info(`openai sendMessage (including retries) response time: ${end - start} ms`)
@@ -90,21 +90,21 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       setFailed(errorMessage)
       warning(errorMessage)
     }
-    
+
     // remove the prefix "with " in the response
     if (responseText.startsWith('with ')) {
       responseText = responseText.substring(5)
     }
-    
+
     if (this.options.debug) {
       info(`openai responses: ${responseText}`)
     }
-    
+
     const newIds: Ids = {
       parentMessageId: response?.id,
       conversationId: response?.id // GPT-5では会話IDの概念が変わる可能性があるため、response IDを使用
     }
-    
+
     return [responseText, newIds]
   }
 }

@@ -2,7 +2,7 @@ import {setFailed} from '@actions/core'
 
 /**
  * OpenAI API クライアント（GPT-5対応）
- * 
+ *
  * GPT-5では max_tokens の代わりに max_completion_tokens を使用する必要がある。
  * 古いchatgptライブラリは対応していないため、直接OpenAI APIを呼び出す。
  */
@@ -42,15 +42,15 @@ export class OpenAIClient {
 
   async sendMessage(content: string, systemMessage?: string): Promise<OpenAIResponse> {
     const messages: OpenAIMessage[] = []
-    
+
     if (systemMessage) {
-      messages.push({ role: 'system', content: systemMessage })
+      messages.push({role: 'system', content: systemMessage})
     }
-    
-    messages.push({ role: 'user', content })
+
+    messages.push({role: 'user', content})
 
     const requestBody = this.buildRequestBody(messages)
-    
+
     if (this.options.debug) {
       console.log('OpenAI API request:', JSON.stringify(requestBody, null, 2))
     }
@@ -68,14 +68,14 @@ export class OpenAIClient {
       if (!response.ok) {
         const errorText = await response.text()
         const errorMessage = `OpenAI API error ${response.status}: ${errorText}`
-        
+
         // エラーの場合はCI を失敗させる
         setFailed(errorMessage)
         throw new Error(errorMessage)
       }
 
       const data = await response.json()
-      
+
       if (this.options.debug) {
         console.log('OpenAI API response:', JSON.stringify(data, null, 2))
       }
@@ -83,7 +83,7 @@ export class OpenAIClient {
       return this.parseResponse(data)
     } catch (error) {
       const errorMessage = `Failed to call OpenAI API: ${error}`
-      
+
       // エラーの場合はCI を失敗させる
       setFailed(errorMessage)
       throw error
@@ -93,7 +93,7 @@ export class OpenAIClient {
   private buildHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.options.apiKey}`
+      Authorization: `Bearer ${this.options.apiKey}`
     }
 
     if (this.options.apiOrg) {
@@ -105,7 +105,7 @@ export class OpenAIClient {
 
   private buildRequestBody(messages: OpenAIMessage[]): Record<string, any> {
     const isGpt5 = this.options.model.startsWith('gpt-5')
-    
+
     const body: Record<string, any> = {
       model: this.options.model,
       messages,
