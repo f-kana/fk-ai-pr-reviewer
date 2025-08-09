@@ -1,0 +1,22 @@
+name: Verify dist and lib are up-to-date
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  verify-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build && npm run package
+      - name: Check dist and lib are up-to-date
+        run: |
+          git diff --name-only --exit-code dist/ lib/ || {
+            echo 'dist/ または lib/ が最新ではありません。npm run build && npm run package の成果物をコミットしてください。';
+            exit 1;
+          }
