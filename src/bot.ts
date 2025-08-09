@@ -1,9 +1,7 @@
-import './fetch-polyfill'
-
 import {info, setFailed, warning} from '@actions/core'
-import {ChatGPTAPI, ChatGPTError, ChatMessage, SendMessageOptions} from 'chatgpt'
 import pRetry from 'p-retry'
-import {OpenAIOptions, Options, ChatGptApiWrapperBuilder} from './options'
+import {OpenAIOptions, Options} from './options'
+import {OpenAIClient, OpenAIResponse} from './openai-client'
 
 // define type to save parentMessageId and conversationId
 export interface Ids {
@@ -12,18 +10,39 @@ export interface Ids {
 }
 
 export class Bot {
-  private readonly apiWrapper: ChatGPTAPI | null = null // not free
-
+  private readonly openaiClient: OpenAIClient
   private readonly options: Options
+  private readonly openaiOptions: OpenAIOptions
+  private readonly systemMessage: string
 
   constructor(options: Options, openaiOptions: OpenAIOptions) {
     if (!process.env.OPENAI_API_KEY) {
       const err = "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
+      setFailed(err)
       throw new Error(err)
     }
 
     this.options = options
-    this.apiWrapper = new ChatGptApiWrapperBuilder(options, openaiOptions).build()
+    this.openaiOptions = openaiOptions
+
+    // システムメッセージを構築
+    const currentDate = new Date().toISOString().split('T')[0]
+    this.systemMessage = `${options.systemMessage}
+Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
+Current date: ${currentDate}
+
+IMPORTANT: Entire response must be in the language with ISO code: ${options.language}
+`
+
+    this.openaiClient = new OpenAIClient({
+      apiKey: process.env.OPENAI_API_KEY,
+      apiOrg: process.env.OPENAI_API_ORG,
+      apiBaseUrl: options.apiBaseUrl,
+      model: openaiOptions.model,
+      temperature: options.openaiModelTemperature,
+      maxTokens: openaiOptions.tokenLimits.responseTokens,
+      debug: options.debug
+    })
   }
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
@@ -32,9 +51,9 @@ export class Bot {
       res = await this.chat_(message, ids)
       return res
     } catch (e: unknown) {
-      if (e instanceof ChatGPTError) {
-        warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
-      }
+      const errorMessage = `Failed to chat with OpenAI: ${e}`
+      setFailed(errorMessage)
+      warning(errorMessage)
       return res
     }
   }
@@ -46,48 +65,46 @@ export class Bot {
       return ['', {}]
     }
 
-    let response: ChatMessage | undefined
+    let response: OpenAIResponse | undefined
 
-    if (this.apiWrapper != null) {
-      // parentMessageIdはリファクタリングの余地がありそうだが、確証がないので一旦保留
-      const opts: SendMessageOptions = {
-        timeoutMs: this.options.openaiTimeoutMS
-      }
-      if (ids.parentMessageId) {
-        opts.parentMessageId = ids.parentMessageId
-      }
-      try {
-        response = await pRetry(() => this.apiWrapper!.sendMessage(message, opts), {
-          retries: this.options.openaiRetries
-        })
-      } catch (e: unknown) {
-        if (e instanceof ChatGPTError) {
-          info(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`)
-        }
-      }
-      const end = Date.now()
-      info(`response: ${JSON.stringify(response)}`)
-      info(`openai sendMessage (including retries) response time: ${end - start} ms`)
-    } else {
-      setFailed('The OpenAI API is not initialized')
+    try {
+      response = await pRetry(() => this.openaiClient.sendMessage(message, this.systemMessage), {
+        retries: this.options.openaiRetries
+      })
+    } catch (e: unknown) {
+      const errorMessage = `Failed to send message to OpenAI: ${e}`
+      info(`response: ${response}, failed to send message to openai: ${e}`)
+      setFailed(errorMessage)
+      throw e
     }
+
+    const end = Date.now()
+    info(`response: ${JSON.stringify(response)}`)
+    info(`openai sendMessage (including retries) response time: ${end - start} ms`)
+
     let responseText = ''
     if (response != null) {
       responseText = response.text
     } else {
-      warning('openai response is null')
+      const errorMessage = 'OpenAI response is null'
+      setFailed(errorMessage)
+      warning(errorMessage)
     }
+
     // remove the prefix "with " in the response
     if (responseText.startsWith('with ')) {
       responseText = responseText.substring(5)
     }
+
     if (this.options.debug) {
       info(`openai responses: ${responseText}`)
     }
+
     const newIds: Ids = {
       parentMessageId: response?.id,
-      conversationId: response?.conversationId
+      conversationId: response?.id // GPT-5では会話IDの概念が変わる可能性があるため、response IDを使用
     }
+
     return [responseText, newIds]
   }
 }

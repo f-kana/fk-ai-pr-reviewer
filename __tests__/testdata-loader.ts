@@ -4,7 +4,7 @@ abstract class TestDataLoader {
     if (!this.filePath) {
       throw new Error('filePath is not defined')
     }
-    return require(this.filePath);
+    return require(this.filePath)
   }
 }
 

@@ -3,7 +3,6 @@ import {context as github_context} from '@actions/github'
 import {Context} from '@actions/github/lib/context'
 import {octokit} from './octokit'
 
-
 export class InputsService {
   private readonly _inputs: Inputs
   private readonly _context: Context
@@ -26,6 +25,6 @@ export class InputsService {
   async fetchAndStoreIssueDetails(issueNumber: number): Promise<void> {
     // const response = await axios.get(`https://api.github.com/repos/{owner}/{repo}/issues/${issueId}`)
     // this.issueDetails = response.data
-    octokit.issues.get({owner: this._owner, repo: this._repo, issue_number: issueNumber});
+    octokit.issues.get({owner: this._owner, repo: this._repo, issue_number: issueNumber})
   }
 }

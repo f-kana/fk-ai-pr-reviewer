@@ -1,5 +1,10 @@
 # FK AI PR Reviwer (based on CodeRabbit Pro)
-A fork from CodeRabbit, with additional features (work in-porogress.)
+A fork from CodeRabbit, with additional features and **GPT-5 support**.
+
+**🆕 GPT-5対応**
+- GPT-5モデルのmax_completion_tokensパラメータに対応
+- エラー時のCI失敗機能を強化
+- GPT-5専用最適化（従来モデルとの互換性より優先）
 
 # Original README: CodeRabbit Pro
 This is an old version of [CodeRabbit](http://coderabbit.ai) and is now in the maintenance mode.
@@ -110,14 +115,22 @@ jobs:
   OpenAI API if you have multiple. Please add this key to your GitHub Action
   secrets.
 
-### Models: `gpt-4o`, `gpt-4` and `gpt-3.5-turbo`
+### Models: `gpt-5`, `gpt-4o`, `gpt-4` and `gpt-3.5-turbo`
+
+**GPT-5対応**: このフォークはGPT-5の新しいAPI仕様に対応しています。GPT-5では`max_tokens`パラメータの代わりに`max_completion_tokens`を使用します。
 
 Recommend using `gpt-3.5-turbo` for lighter tasks such as summarizing the
-changes (`openai_light_model` in configuration) and `gpt-4o` or `gpt-4` for more complex
+changes (`openai_light_model` in configuration) and `gpt-5` or `gpt-4o` for more complex
 review and commenting tasks (`openai_heavy_model` in configuration).
 
+**GPT-5の利点**:
+- より高度なコード理解と解析能力
+- 長いコンテキストサポート（400,000トークン）
+- 改善されたツール呼び出し機能
+
 Costs: `gpt-3.5-turbo` is dirt cheap. `gpt-4` is orders of magnitude more
-expensive, but the results are vastly superior. We are typically spending $20 a
+expensive, but the results are vastly superior. `gpt-5` offers the best quality
+but at premium pricing. We are typically spending $20 a
 day for a 20 developer team with `gpt-4` based review and commenting.
 
 ### Prompts & Configuration

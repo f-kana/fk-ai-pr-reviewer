@@ -1,10 +1,4 @@
-import {
-  getBooleanInput,
-  getInput,
-  getMultilineInput,
-  info
-} from '@actions/core'
-import { ChatGPTAPI } from 'chatgpt'
+import {getBooleanInput, getInput, getMultilineInput, info} from '@actions/core'
 
 import {minimatch} from 'minimatch'
 import {TokenLimits} from './limits'
@@ -135,33 +129,6 @@ export class OptionBuilderFromGhaYml extends OptionBuilder {
       getInput('language')
     )
     return options
-  }
-}
-
-export class ChatGptApiWrapperBuilder {
-  constructor(private readonly options: Options, private readonly openaiOptions: OpenAIOptions,) {}
-
-  build(): ChatGPTAPI {
-    const currentDate = new Date().toISOString().split('T')[0]
-    const systemMessage = `${this.options.systemMessage}
-Knowledge cutoff: ${this.openaiOptions.tokenLimits.knowledgeCutOff}
-Current date: ${currentDate}
-
-IMPORTANT: Entire response must be in the language with ISO code: ${this.options.language}
-`
-    return new ChatGPTAPI({
-      apiBaseUrl: this.options.apiBaseUrl,
-      systemMessage,
-      apiKey: process.env.OPENAI_API_KEY ?? '',
-      apiOrg: process.env.OPENAI_API_ORG ?? undefined,
-      debug: this.options.debug,
-      maxModelTokens: this.openaiOptions.tokenLimits.maxTokens,
-      maxResponseTokens: this.openaiOptions.tokenLimits.responseTokens,
-      completionParams: {
-        temperature: this.options.openaiModelTemperature,
-        model: this.openaiOptions.model
-      }
-    })
   }
 }
 

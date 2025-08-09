@@ -1,6 +1,6 @@
 import {expect, describe, it, beforeAll} from '@jest/globals'
 import {GhPrWrapper, GhIssueWrapper} from '../src/gh-issueable-wrapper'
-import {GhTestDataLoaderForPr6ForIssue5, GhTestDataLoaderForIssue5} from './testdata-loader';
+import {GhTestDataLoaderForPr6ForIssue5, GhTestDataLoaderForIssue5} from './testdata-loader'
 
 describe('octokit-helpers tests', () => {
   beforeAll(() => {})
