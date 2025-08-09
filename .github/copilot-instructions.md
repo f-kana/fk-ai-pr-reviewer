@@ -8,7 +8,7 @@
 ## 前提
 
 * ユーザーはシニアエンジニアです。CopilotにはSoftware Engineeringの専門用語を使った高度なディスカッションや指摘を期待しています。
-  
+
 ## Basic Instructions
 
 * 回答は常に日本語で返すこと。
@@ -17,3 +17,14 @@
 ## Coding Instructions
 
 * 命名や設計は一貫性があること（コードベースの他の部分を参照して一貫性を担保すること）
+
+## Command Execution in Agent Mode
+
+## Whitelist (ユーザーの許可なくCopilotが実行してよいコマンド)
+
+* npm test
+
+## blacklist (ユーザーの許可なくCopilotが実行してはならないコマンド)
+
+* git commit
+* git push

@@ -108,9 +108,11 @@ export class OpenAIClient {
 
     const body: Record<string, any> = {
       model: this.options.model,
-      messages,
-      temperature: this.options.temperature
+      messages
     }
+
+    // 仕様変更: GPT-5 では temperature パラメータをサポートせず、他モデルでも任意 (デフォルト=1) のため常に送信しない。
+    // 互換性簡素化のため gpt-4o 等向けの temperature チューニング機能は削除 (要求により切り捨て)。
 
     // GPT-5では max_completion_tokens、それ以外では max_tokens を使用
     if (isGpt5) {

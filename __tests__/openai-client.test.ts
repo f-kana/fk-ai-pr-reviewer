@@ -8,6 +8,7 @@ describe('OpenAIClient', () => {
       apiKey: 'test-key',
       apiBaseUrl: 'https://api.openai.com/v1',
       model: 'gpt-5',
+      // temperature omitted (client ignores it)
       temperature: 0.7,
       maxTokens: 4000,
       debug: false
@@ -20,9 +21,10 @@ describe('OpenAIClient', () => {
     const buildRequestBody = (client as any).buildRequestBody.bind(client)
     const result = buildRequestBody(messages)
 
-    expect(result.max_completion_tokens).toBe(4000)
+  expect(result.max_completion_tokens).toBe(4000)
     expect(result.max_tokens).toBeUndefined()
     expect(result.model).toBe('gpt-5')
+  expect(result.temperature).toBeUndefined()
   })
 
   it('should correctly set max_tokens for non-GPT-5 models', () => {
@@ -40,15 +42,16 @@ describe('OpenAIClient', () => {
     const buildRequestBody = (client as any).buildRequestBody.bind(client)
     const result = buildRequestBody(messages)
 
-    expect(result.max_tokens).toBe(4000)
-    expect(result.max_completion_tokens).toBeUndefined()
-    expect(result.model).toBe('gpt-4o')
+  expect(result.max_tokens).toBe(4000)
+  expect(result.max_completion_tokens).toBeUndefined()
+  expect(result.model).toBe('gpt-4o')
+  expect(result.temperature).toBeUndefined()
   })
 
   it('should correctly detect GPT-5 variants', () => {
     const models = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5-turbo']
 
-    models.forEach(model => {
+    for (const model of models) {
       const client = new OpenAIClient({
         apiKey: 'test-key',
         apiBaseUrl: 'https://api.openai.com/v1',
@@ -65,6 +68,7 @@ describe('OpenAIClient', () => {
       expect(result.max_completion_tokens).toBe(4000)
       expect(result.max_tokens).toBeUndefined()
       expect(result.model).toBe(model)
-    })
+      expect(result.temperature).toBeUndefined()
+    }
   })
 })

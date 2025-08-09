@@ -1,4 +1,11 @@
-import {describe, it, expect, beforeEach, afterEach} from '@jest/globals'
+import {describe, it, expect, beforeEach, afterEach, jest} from '@jest/globals'
+
+// Jest mock for @actions/core to avoid setFailed affecting process exit code in tests
+jest.mock('@actions/core', () => ({
+  setFailed: jest.fn(),
+  info: jest.fn(),
+  warning: jest.fn()
+}))
 
 import {Bot} from '../src/bot'
 import {Options, OptionBuilderWithDefaults, OpenAIOptions} from '../src/options'

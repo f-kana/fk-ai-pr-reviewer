@@ -8,7 +8,7 @@ module.exports = {
     "^.+\\.js$": "babel-jest"
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!chatgpt|p-timeout|quick-lru).+\\.js$"
+    "/node_modules/(?!chatgpt|p-timeout|quick-lru|p-retry).+\\.js$"
   ],
   verbose: true
 };
