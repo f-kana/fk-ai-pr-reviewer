@@ -7,8 +7,11 @@ import {OpenAIClient} from '../../src/openai-client'
 /// OpenAI APIとの接続テスト。オプション付で、`RUN_OPENAI_API_TESTS=1 npm test`としたときのみ実行可能。お金がかかるので。
 describe('External Integration Tests (ITb) with OpenAI API', () => {
   dotenv.config({override: false})
+  const hasKey = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith('sk-')
   if (!process.env.RUN_OPENAI_API_TESTS) {
-    it.skip('Skip OpenAI API test.', () => {})
+    it.skip('Skip OpenAI API test (flag not set).', () => {})
+  } else if (!hasKey) {
+    it.skip('Skip OpenAI API test (valid OPENAI_API_KEY not provided).', () => {})
   } else {
     it('Just confirm OpenAI API call', async () => {
       const options = new OptionBuilderWithDefaults().build()
@@ -26,10 +29,9 @@ describe('External Integration Tests (ITb) with OpenAI API', () => {
 
       const message = 'Say this is a test!'
 
-      const response = await openaiClient.sendMessage(message)
-      console.log(response)
-      expect(response.text).toBeDefined()
-      expect(response.text.length).toBeGreaterThan(0)
+  const response = await openaiClient.sendMessage(message)
+  expect(response.text).toBeDefined()
+  expect(response.text.length).toBeGreaterThan(0)
     })
   }
 })

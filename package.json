@@ -1,6 +1,6 @@
 {
   "name": "fk-ai-pr-reviewer",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "Forked from CodeRabbit, OpenAI-based PR Reviewer and Summarizer.",
   "main": "lib/main.js",
@@ -11,7 +11,8 @@
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts __tests__/**/*.ts",
-    "test": "JEST_TEST=1 jest",
+  "test": "JEST_TEST=1 jest",
+  "test:api": "RUN_OPENAI_API_TESTS=1 npm test",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "repository": {

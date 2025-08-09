@@ -131,8 +131,53 @@ class OpenAIClient {
         if (this.options.debug) {
             console.log('OpenAI API request:', JSON.stringify(requestBody, null, 2));
         }
-        // Node.js 18+ の標準fetchを使用、polyfillは不要
-        const fetchFn = globalThis.fetch || (await __nccwpck_require__.e(/* import() */ 841).then(__nccwpck_require__.bind(__nccwpck_require__, 2841))).default;
+        // fetch 利用: Node.js 18+ で存在。存在しない (古い Node/Jest 環境) 場合は https で簡易 polyfill
+        let fetchFn;
+        if (globalThis.fetch) {
+            fetchFn = globalThis.fetch;
+        }
+        else {
+            // 簡易 polyfill (POST + JSON ボディのみ対応 / 最低限)
+            // ※ 本番ランタイムでは Node18+ 前提。テスト環境用フォールバック。
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const https = __nccwpck_require__(5687);
+            fetchFn = (async (url, init) => {
+                return new Promise((resolve, reject) => {
+                    const u = new URL(url);
+                    const req = https.request({
+                        hostname: u.hostname,
+                        path: u.pathname + u.search,
+                        method: init?.method || 'GET',
+                        headers: init?.headers
+                    }, (res) => {
+                        const chunks = [];
+                        res.on('data', (c) => chunks.push(c));
+                        res.on('end', () => {
+                            const buffer = Buffer.concat(chunks);
+                            const text = buffer.toString('utf-8');
+                            resolve({
+                                ok: res.statusCode >= 200 && res.statusCode < 300,
+                                status: res.statusCode,
+                                text: async () => text,
+                                json: async () => {
+                                    try {
+                                        return JSON.parse(text);
+                                    }
+                                    catch {
+                                        return {};
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    req.on('error', reject);
+                    if (init?.body) {
+                        req.write(init.body);
+                    }
+                    req.end();
+                });
+            });
+        }
         try {
             const response = await fetchFn(`${this.options.apiBaseUrl}/chat/completions`, {
                 method: 'POST',
@@ -173,9 +218,10 @@ class OpenAIClient {
         const isGpt5 = this.options.model.startsWith('gpt-5');
         const body = {
             model: this.options.model,
-            messages,
-            temperature: this.options.temperature
+            messages
         };
+        // 仕様変更: GPT-5 では temperature パラメータをサポートせず、他モデルでも任意 (デフォルト=1) のため常に送信しない。
+        // 互換性簡素化のため gpt-4o 等向けの temperature チューニング機能は削除 (要求により切り捨て)。
         // GPT-5では max_completion_tokens、それ以外では max_tokens を使用
         if (isGpt5) {
             body.max_completion_tokens = this.options.maxTokens;
@@ -26273,14 +26319,6 @@ module.exports = require("assert");
 
 /***/ }),
 
-/***/ 4300:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("buffer");
-
-/***/ }),
-
 /***/ 6113:
 /***/ ((module) => {
 
@@ -26326,102 +26364,6 @@ module.exports = require("https");
 
 "use strict";
 module.exports = require("net");
-
-/***/ }),
-
-/***/ 2254:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:buffer");
-
-/***/ }),
-
-/***/ 7561:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:fs");
-
-/***/ }),
-
-/***/ 8849:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:http");
-
-/***/ }),
-
-/***/ 2286:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:https");
-
-/***/ }),
-
-/***/ 7503:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:net");
-
-/***/ }),
-
-/***/ 9411:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:path");
-
-/***/ }),
-
-/***/ 7742:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:process");
-
-/***/ }),
-
-/***/ 4492:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:stream");
-
-/***/ }),
-
-/***/ 2477:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:stream/web");
-
-/***/ }),
-
-/***/ 1041:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:url");
-
-/***/ }),
-
-/***/ 7261:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:util");
-
-/***/ }),
-
-/***/ 5628:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:zlib");
 
 /***/ }),
 
@@ -26486,14 +26428,6 @@ module.exports = require("url");
 
 "use strict";
 module.exports = require("util");
-
-/***/ }),
-
-/***/ 1267:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("worker_threads");
 
 /***/ }),
 
@@ -27044,9 +26978,6 @@ module.exports = JSON.parse('{"name":"dotenv","version":"16.4.5","description":"
 /******/ 		return module.exports;
 /******/ 	}
 /******/ 	
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__nccwpck_require__.m = __webpack_modules__;
-/******/ 	
 /************************************************************************/
 /******/ 	/* webpack/runtime/async module */
 /******/ 	(() => {
@@ -27141,28 +27072,6 @@ module.exports = JSON.parse('{"name":"dotenv","version":"16.4.5","description":"
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/ensure chunk */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.f = {};
-/******/ 		// This file contains only the entry chunk.
-/******/ 		// The chunk loading function for additional chunks
-/******/ 		__nccwpck_require__.e = (chunkId) => {
-/******/ 			return Promise.all(Object.keys(__nccwpck_require__.f).reduce((promises, key) => {
-/******/ 				__nccwpck_require__.f[key](chunkId, promises);
-/******/ 				return promises;
-/******/ 			}, []));
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/get javascript chunk filename */
-/******/ 	(() => {
-/******/ 		// This function allow to reference async chunks
-/******/ 		__nccwpck_require__.u = (chunkId) => {
-/******/ 			// return url for filenames based on template
-/******/ 			return "" + chunkId + ".index.js";
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
 /******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
@@ -27191,48 +27100,6 @@ module.exports = JSON.parse('{"name":"dotenv","version":"16.4.5","description":"
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
-/******/ 	
-/******/ 	/* webpack/runtime/require chunk loading */
-/******/ 	(() => {
-/******/ 		// no baseURI
-/******/ 		
-/******/ 		// object to store loaded chunks
-/******/ 		// "1" means "loaded", otherwise not loaded yet
-/******/ 		var installedChunks = {
-/******/ 			179: 1
-/******/ 		};
-/******/ 		
-/******/ 		// no on chunks loaded
-/******/ 		
-/******/ 		var installChunk = (chunk) => {
-/******/ 			var moreModules = chunk.modules, chunkIds = chunk.ids, runtime = chunk.runtime;
-/******/ 			for(var moduleId in moreModules) {
-/******/ 				if(__nccwpck_require__.o(moreModules, moduleId)) {
-/******/ 					__nccwpck_require__.m[moduleId] = moreModules[moduleId];
-/******/ 				}
-/******/ 			}
-/******/ 			if(runtime) runtime(__nccwpck_require__);
-/******/ 			for(var i = 0; i < chunkIds.length; i++)
-/******/ 				installedChunks[chunkIds[i]] = 1;
-/******/ 		
-/******/ 		};
-/******/ 		
-/******/ 		// require() chunk loading for javascript
-/******/ 		__nccwpck_require__.f.require = (chunkId, promises) => {
-/******/ 			// "1" is the signal for "already loaded"
-/******/ 			if(!installedChunks[chunkId]) {
-/******/ 				if(true) { // all chunks have JS
-/******/ 					installChunk(require("./" + __nccwpck_require__.u(chunkId)));
-/******/ 				} else installedChunks[chunkId] = 1;
-/******/ 			}
-/******/ 		};
-/******/ 		
-/******/ 		// no external install chunk
-/******/ 		
-/******/ 		// no HMR
-/******/ 		
-/******/ 		// no HMR manifest
-/******/ 	})();
 /******/ 	
 /************************************************************************/
 /******/ 	

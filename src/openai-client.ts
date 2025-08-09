@@ -55,8 +55,54 @@ export class OpenAIClient {
       console.log('OpenAI API request:', JSON.stringify(requestBody, null, 2))
     }
 
-    // Node.js 18+ の標準fetchを使用、polyfillは不要
-    const fetchFn = globalThis.fetch || (await import('node-fetch')).default
+    // fetch 利用: Node.js 18+ で存在。存在しない (古い Node/Jest 環境) 場合は https で簡易 polyfill
+    let fetchFn: typeof fetch
+    if (globalThis.fetch) {
+      fetchFn = globalThis.fetch
+    } else {
+      // 簡易 polyfill (POST + JSON ボディのみ対応 / 最低限)
+      // ※ 本番ランタイムでは Node18+ 前提。テスト環境用フォールバック。
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const https = require('https')
+      fetchFn = (async (url: string, init?: any): Promise<any> => {
+        return new Promise((resolve, reject) => {
+          const u = new URL(url)
+          const req = https.request(
+            {
+              hostname: u.hostname,
+              path: u.pathname + u.search,
+              method: init?.method || 'GET',
+              headers: init?.headers
+            },
+            (res: any) => {
+              const chunks: any[] = []
+              res.on('data', (c: any) => chunks.push(c))
+              res.on('end', () => {
+                const buffer = Buffer.concat(chunks)
+                const text = buffer.toString('utf-8')
+                resolve({
+                  ok: res.statusCode >= 200 && res.statusCode < 300,
+                  status: res.statusCode,
+                  text: async () => text,
+                  json: async () => {
+                    try {
+                      return JSON.parse(text)
+                    } catch {
+                      return {}
+                    }
+                  }
+                })
+              })
+            }
+          )
+          req.on('error', reject)
+            if (init?.body) {
+              req.write(init.body)
+            }
+            req.end()
+        })
+      }) as any
+    }
 
     try {
       const response = await fetchFn(`${this.options.apiBaseUrl}/chat/completions`, {
