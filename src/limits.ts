@@ -14,7 +14,7 @@ export class TokenLimits {
 
   constructor(model = 'gpt-3.5-turbo') {
     // Update knowledge cutoff for newer models
-    if (model === 'gpt-5') {
+    if (model === 'gpt-5' || model === 'gpt-5-mini' || model === 'gpt-5-nano') {
       this.knowledgeCutOff = '2024-08-01'
     } else if (model === 'gpt-4o') {
       this.knowledgeCutOff = '2024-04-01'
@@ -22,7 +22,7 @@ export class TokenLimits {
       this.knowledgeCutOff = '2021-09-01'
     }
 
-    if (model === 'gpt-5') {
+    if (model === 'gpt-5' || model === 'gpt-5-mini' || model === 'gpt-5-nano') {
       this.maxTokens = 400000
       this.responseTokens = 128000
     } else if (model === 'gpt-4-32k') {
