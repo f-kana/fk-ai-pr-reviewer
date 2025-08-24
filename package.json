@@ -36,7 +36,7 @@
     "minimatch": "^9.0.1",
     "node-fetch": "^3.3.1",
     "p-limit": "^4.0.0",
-    "p-retry": "^5.1.2"
+    "p-retry": "^6.2.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.6",
