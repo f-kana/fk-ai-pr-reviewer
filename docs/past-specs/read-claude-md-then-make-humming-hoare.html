@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Plan: Issue #62 - GPT最新APIへの対応</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; color: #1a1a1a; line-height: 1.6; }
+  h1 { border-bottom: 3px solid #333; padding-bottom: 0.3em; }
+  h2 { color: #2c5282; margin-top: 1.5em; }
+  h3 { color: #4a5568; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+  th { background: #edf2f7; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  .file { color: #2b6cb0; font-weight: bold; }
+  .new-model { background: #f0fff4; }
+  .cost-note { background: #fffff0; border-left: 4px solid #ecc94b; padding: 0.8em 1em; margin: 1em 0; }
+  .risk-note { background: #fff5f5; border-left: 4px solid #e53e3e; padding: 0.8em 1em; margin: 1em 0; }
+  .section { margin-bottom: 2em; }
+  del { color: #999; }
+</style>
+</head>
+<body>
+
+<h1>Plan: Issue #62 - GPT最新APIへの対応</h1>
+
+<div class="section">
+<h2>Context</h2>
+<p>
+Issue #62の要望: GPT-5.5やGPT-5.4ファミリーなど、最後の修正以降にリリースされたより高性能・低コストなモデルへの対応。
+現在のコードは <code>gpt-5</code>, <code>gpt-5-mini</code>, <code>gpt-5-nano</code>, <code>gpt-4o</code> までしかサポートしていない。
+</p>
+
+<div class="cost-note">
+<strong>コスト比較（1M tokensあたり）:</strong><br>
+<strong>新規追加モデル:</strong><br>
+<code>gpt-5.5</code>: $5.00 input / $30.00 output<br>
+<code>gpt-5.4</code>: $2.50 input / $15.00 output<br>
+<code>gpt-5.4-mini</code>: $0.75 input / $4.50 output<br>
+<code>gpt-5.4-nano</code>: $0.20 input / $1.25 output<br>
+<br>
+<strong>既存モデル（互換性維持）:</strong><br>
+<code>gpt-5</code>: $1.25 input / $10.00 output<br>
+<code>gpt-5-mini</code>: $0.25 input / $2.00 output<br>
+<code>gpt-5-nano</code>: $0.05 input / $0.40 output<br>
+<br>
+<em style="font-size: 0.9em;">※ gpt-5系既存モデルはレガシーモデルとして位置づけられており、既存統合のために提供されています。</em>
+</div>
+
+<div class="risk-note">
+<strong>注意: requestTokens の大幅増加</strong><br>
+<code>gpt-5.4</code> の場合 <code>requestTokens = 1,050,000 - 128,000 - 100 = 921,900</code> となり、
+従来の <code>gpt-5</code>（271,900）の約3.4倍になる。<br>
+<code>src/review.ts</code> と <code>src/review-comment.ts</code> で <code>requestTokens</code> を入力サイズ上限として使用しているため、
+1回のAPIリクエストに含まれるdiff量が大幅に増える可能性がある。<br>
+→ タイムアウト設定（デフォルト360秒）で十分か、APIコストの増大が許容範囲か確認すること。
+</div>
+</div>
+
+<div class="section">
+<h2>モデル一覧（変更後）</h2>
+<p>GPT-4系（<code>gpt-4o</code>, <code>gpt-4</code>, <code>gpt-4-32k</code>, <code>gpt-3.5-turbo</code> 等）は全て削除する。既に5系しか使用していないため。</p>
+<table>
+  <tr>
+    <th>モデルID</th>
+    <th>Context Window</th>
+    <th>Max Output</th>
+    <th>Knowledge Cutoff</th>
+    <th>価格 (in/out per 1M)</th>
+    <th>備考</th>
+  </tr>
+  <tr>
+    <td><code>gpt-5</code></td>
+    <td>400,000</td>
+    <td>128,000</td>
+    <td>2024-08-01</td>
+    <td>$1.25 / $10.00</td>
+    <td>既存（維持・互換性）</td>
+  </tr>
+  <tr>
+    <td><code>gpt-5-mini</code></td>
+    <td>400,000</td>
+    <td>128,000</td>
+    <td>2024-08-01</td>
+    <td>$0.25 / $2.00</td>
+    <td>既存（維持・互換性）</td>
+  </tr>
+  <tr>
+    <td><code>gpt-5-nano</code></td>
+    <td>400,000</td>
+    <td>128,000</td>
+    <td>2024-08-01</td>
+    <td>$0.05 / $0.40</td>
+    <td>既存（維持・互換性）</td>
+  </tr>
+  <tr class="new-model">
+    <td><code>gpt-5.5</code></td>
+    <td>1,050,000</td>
+    <td>128,000</td>
+    <td>2025-12-01</td>
+    <td>$5.00 / $30.00</td>
+    <td>最高性能フラグシップ</td>
+  </tr>
+  <tr class="new-model">
+    <td><code>gpt-5.4</code></td>
+    <td>1,050,000</td>
+    <td>128,000</td>
+    <td>2025-08-31</td>
+    <td>$2.50 / $15.00</td>
+    <td><strong>新Heavy推奨</strong></td>
+  </tr>
+  <tr class="new-model">
+    <td><code>gpt-5.4-mini</code></td>
+    <td>400,000</td>
+    <td>128,000</td>
+    <td>2025-08-31</td>
+    <td>$0.75 / $4.50</td>
+    <td><strong>新Light推奨</strong></td>
+  </tr>
+  <tr class="new-model">
+    <td><code>gpt-5.4-nano</code></td>
+    <td>400,000</td>
+    <td>128,000</td>
+    <td>2025-08-31</td>
+    <td>$0.20 / $1.25</td>
+    <td>最安モデル</td>
+  </tr>
+</table>
+<p style="font-size: 0.9em; color: #666;">
+価格情報ソース:
+<a href="https://developers.openai.com/api/docs/pricing" target="_blank">OpenAI API Pricing</a> (GPT-5.4系・GPT-5.5),
+<a href="https://devtk.ai/en/blog/openai-api-pricing-guide-2026/" target="_blank">OpenAI API Pricing Guide 2026</a> (GPT-5系既存モデル)
+</p>
+</div>
+
+<div class="section">
+<h2>変更対象ファイルと内容</h2>
+
+<h3>1. <span class="file">src/limits.ts</span></h3>
+<p><strong>GPT-4系の全分岐を削除し、GPT-5系のみの個別列挙に書き換える。</strong><code>startsWith</code> は使わない（<code>gpt-5.4</code> と <code>gpt-5.4-mini</code> で maxTokens が異なるため区別が必要）。</p>
+<p>削除対象:</p>
+<ul>
+  <li><code>model === 'gpt-4o'</code> 分岐（knowledgeCutOff, maxTokens両方）</li>
+  <li><code>model === 'gpt-4-32k'</code> 分岐</li>
+  <li><code>model === 'gpt-3.5-turbo-16k'</code> 分岐</li>
+  <li><code>model === 'gpt-4'</code> 分岐</li>
+  <li>コンストラクタのデフォルト引数 <code>'gpt-3.5-turbo'</code> → <code>'gpt-5.4-mini'</code> に変更</li>
+</ul>
+<p>変更後の分岐構造（knowledgeCutOff）:</p>
+<pre><code>if (model === 'gpt-5.5')                                     → '2025-12-01'
+else if (model === 'gpt-5.4' || 'gpt-5.4-mini' || 'gpt-5.4-nano') → '2025-08-31'
+else if (model === 'gpt-5' || 'gpt-5-mini' || 'gpt-5-nano')       → '2024-08-01'
+else                                                               → '2024-08-01'  // フォールバック
+</code></pre>
+<p>変更後の分岐構造（maxTokens / responseTokens）:</p>
+<pre><code>if (model === 'gpt-5.5' || model === 'gpt-5.4')                    → maxTokens=1050000, responseTokens=128000
+else if (model === 'gpt-5.4-mini' || model === 'gpt-5.4-nano')     → maxTokens=400000,  responseTokens=128000
+else if (model === 'gpt-5' || 'gpt-5-mini' || 'gpt-5-nano')       → maxTokens=400000,  responseTokens=128000
+else                                                               → maxTokens=400000,  responseTokens=128000  // フォールバック
+</code></pre>
+
+<h3>2. <span class="file">src/openai-client.ts</span> (line 152-168)</h3>
+<ul>
+  <li>GPT-4系が存在しないため、<code>isGpt5</code> 分岐を<strong>削除</strong>し、常に <code>max_completion_tokens</code> を使用する</li>
+  <li><code>max_tokens</code> 側の分岐（旧GPT-4系用）も削除</li>
+</ul>
+<p>変更後:</p>
+<pre><code>// buildRequestBody 内
+body.max_completion_tokens = this.options.maxTokens
+// isGpt5 判定、max_tokens 分岐は削除
+</code></pre>
+
+<h3>3. <span class="file">src/options.ts</span> (line 36-37, 184)</h3>
+<ul>
+  <li>デフォルトモデルを変更:
+    <ul>
+      <li><code>openaiLightModel</code>: <code>'gpt-4o'</code> → <code>'gpt-5.4-mini'</code></li>
+      <li><code>openaiHeavyModel</code>: <code>'gpt-4o'</code> → <code>'gpt-5.4'</code></li>
+    </ul>
+  </li>
+  <li><code>OpenAIOptions</code> クラスのデフォルト引数: <code>'gpt-3.5-turbo'</code> → <code>'gpt-5.4-mini'</code></li>
+</ul>
+
+<h3>4. <span class="file">action.yml</span> (line 155, 159)</h3>
+<ul>
+  <li>デフォルト値を options.ts と同じく更新</li>
+</ul>
+
+<h3>5. <span class="file">__tests__/limits.test.ts</span></h3>
+<ul>
+  <li>GPT-4系テスト（<code>gpt-4o</code>, <code>gpt-4</code>, 未知モデル）を削除</li>
+  <li>GPT-5.5, GPT-5.4, GPT-5.4-mini, GPT-5.4-nano のテストケースを追加</li>
+</ul>
+
+<h3>6. <span class="file">__tests__/openai-client.test.ts</span></h3>
+<ul>
+  <li>GPT-4o のテストを削除</li>
+  <li><code>isGpt5</code> 分岐削除に伴い、全モデルで <code>max_completion_tokens</code> を使用することの確認テストに変更</li>
+  <li>テスト対象モデルID: <code>gpt-5</code>, <code>gpt-5.4</code>, <code>gpt-5.4-mini</code>, <code>gpt-5.4-nano</code>, <code>gpt-5.5</code></li>
+</ul>
+
+<h3>7. <span class="file">dist/</span></h3>
+<ul>
+  <li><code>npm run build</code> 実行後、更新された <code>dist/index.js</code> をコミットに含める（action.ymlのエントリポイント）</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>デフォルトモデルの変更</h2>
+<table>
+  <tr><th>用途</th><th>変更前</th><th>変更後</th><th>理由</th></tr>
+  <tr>
+    <td>Light (サマリー)</td>
+    <td><del><code>gpt-4o</code></del></td>
+    <td><code>gpt-5.4-mini</code></td>
+    <td>サマリーには十分な性能。$0.75/$4.50 per 1M tokens。</td>
+  </tr>
+  <tr>
+    <td>Heavy (コードレビュー)</td>
+    <td><del><code>gpt-4o</code></del></td>
+    <td><code>gpt-5.4</code></td>
+    <td>高い推論力でコードレビュー品質を確保。$2.50/$15.00 per 1M tokens。</td>
+  </tr>
+</table>
+<p>GPT-4系は完全に削除するため、フォールバックは不要。</p>
+</div>
+
+<div class="section">
+<h2>GPT-4系 削除対象の全箇所</h2>
+<table>
+  <tr><th>ファイル</th><th>行</th><th>内容</th></tr>
+  <tr><td><code>src/limits.ts</code></td><td>15</td><td>コンストラクタデフォルト引数 <code>'gpt-3.5-turbo'</code></td></tr>
+  <tr><td><code>src/limits.ts</code></td><td>19-20</td><td><code>gpt-4o</code> の knowledgeCutOff 分岐</td></tr>
+  <tr><td><code>src/limits.ts</code></td><td>22</td><td>else 分岐 knowledgeCutOff <code>'2021-09-01'</code></td></tr>
+  <tr><td><code>src/limits.ts</code></td><td>28-42</td><td><code>gpt-4-32k</code>, <code>gpt-3.5-turbo-16k</code>, <code>gpt-4</code>, <code>gpt-4o</code>, else の全分岐</td></tr>
+  <tr><td><code>src/openai-client.ts</code></td><td>153-168</td><td><code>isGpt5</code> 判定と <code>max_tokens</code> / <code>max_completion_tokens</code> 分岐</td></tr>
+  <tr><td><code>src/options.ts</code></td><td>36-37</td><td>デフォルト引数 <code>'gpt-4o'</code></td></tr>
+  <tr><td><code>src/options.ts</code></td><td>184</td><td><code>OpenAIOptions</code> デフォルト引数 <code>'gpt-3.5-turbo'</code></td></tr>
+  <tr><td><code>action.yml</code></td><td>155, 159</td><td>デフォルト値 <code>'gpt-4o'</code></td></tr>
+  <tr><td><code>__tests__/limits.test.ts</code></td><td>14-28, 30-36</td><td><code>gpt-4o</code>, <code>gpt-4</code>, 未知モデル テスト</td></tr>
+  <tr><td><code>__tests__/openai-client.test.ts</code></td><td>30-49</td><td><code>gpt-4o</code> の <code>max_tokens</code> テスト</td></tr>
+</table>
+
+<h2>検証方法</h2>
+<ol>
+  <li><code>npm test</code> で全テスト通過を確認</li>
+  <li><code>npm run build</code> でビルド成功を確認</li>
+  <li><code>dist/index.js</code> が更新されていることを確認し、コミットに含める</li>
+  <li>既存のGPT-5モデルのテストが引き続きパスすることを確認（回帰なし）</li>
+</ol>
+</div>
+
+</body>
+</html>

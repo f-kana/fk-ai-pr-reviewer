@@ -11,41 +11,61 @@ describe('TokenLimits tests', () => {
     expect(limits.requestTokens).toBe(400000 - 128000 - 100)
   })
 
-  test('GPT-4oモデルのknowledge cutoffが更新される', () => {
-    const limits = new TokenLimits('gpt-4o')
+  test('GPT-5.5モデルの設定が正しく適用される', () => {
+    const limits = new TokenLimits('gpt-5.5')
 
-    expect(limits.maxTokens).toBe(128000)
-    expect(limits.responseTokens).toBe(4000)
-    expect(limits.knowledgeCutOff).toBe('2024-04-01')
+    expect(limits.maxTokens).toBe(1050000)
+    expect(limits.responseTokens).toBe(128000)
+    expect(limits.knowledgeCutOff).toBe('2025-12-01')
+    expect(limits.requestTokens).toBe(1050000 - 128000 - 100)
   })
 
-  test('古いモデルのknowledge cutoffは変更されない', () => {
-    const limits = new TokenLimits('gpt-4')
+  test('GPT-5.4モデルの設定が正しく適用される', () => {
+    const limits = new TokenLimits('gpt-5.4')
 
-    expect(limits.maxTokens).toBe(8000)
-    expect(limits.responseTokens).toBe(2000)
-    expect(limits.knowledgeCutOff).toBe('2021-09-01')
+    expect(limits.maxTokens).toBe(1050000)
+    expect(limits.responseTokens).toBe(128000)
+    expect(limits.knowledgeCutOff).toBe('2025-08-31')
+    expect(limits.requestTokens).toBe(1050000 - 128000 - 100)
   })
 
-  test('未知のモデルはデフォルト値を使用する', () => {
+  test('GPT-5.4-miniモデルの設定が正しく適用される', () => {
+    const limits = new TokenLimits('gpt-5.4-mini')
+
+    expect(limits.maxTokens).toBe(400000)
+    expect(limits.responseTokens).toBe(128000)
+    expect(limits.knowledgeCutOff).toBe('2025-08-31')
+    expect(limits.requestTokens).toBe(400000 - 128000 - 100)
+  })
+
+  test('GPT-5.4-nanoモデルの設定が正しく適用される', () => {
+    const limits = new TokenLimits('gpt-5.4-nano')
+
+    expect(limits.maxTokens).toBe(400000)
+    expect(limits.responseTokens).toBe(128000)
+    expect(limits.knowledgeCutOff).toBe('2025-08-31')
+    expect(limits.requestTokens).toBe(400000 - 128000 - 100)
+  })
+
+  test('未知のモデルはGPT-5系デフォルト値を使用する', () => {
     const limits = new TokenLimits('unknown-model')
 
-    expect(limits.maxTokens).toBe(4000)
-    expect(limits.responseTokens).toBe(1000)
-    expect(limits.knowledgeCutOff).toBe('2021-09-01')
+    expect(limits.maxTokens).toBe(400000)
+    expect(limits.responseTokens).toBe(128000)
+    expect(limits.knowledgeCutOff).toBe('2024-08-01')
   })
 
   test('string()メソッドが正しいフォーマットを返す', () => {
-    const limits = new TokenLimits('gpt-4o')
-    const result = limits.string()
-
-    expect(result).toBe('max_tokens=128000, request_tokens=123900, response_tokens=4000')
-  })
-
-  test('GPT-5のstring()メソッドが正しいフォーマットを返す', () => {
-    const limits = new TokenLimits('gpt-5')
+    const limits = new TokenLimits('gpt-5.4-mini')
     const result = limits.string()
 
     expect(result).toBe('max_tokens=400000, request_tokens=271900, response_tokens=128000')
+  })
+
+  test('GPT-5.4のstring()メソッドが正しいフォーマットを返す', () => {
+    const limits = new TokenLimits('gpt-5.4')
+    const result = limits.string()
+
+    expect(result).toBe('max_tokens=1050000, request_tokens=921900, response_tokens=128000')
   })
 })

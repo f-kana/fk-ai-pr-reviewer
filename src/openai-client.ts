@@ -150,24 +150,11 @@ export class OpenAIClient {
   }
 
   private buildRequestBody(messages: OpenAIMessage[]): Record<string, any> {
-    const isGpt5 = this.options.model.startsWith('gpt-5')
-
-    const body: Record<string, any> = {
+    return {
       model: this.options.model,
-      messages
+      messages,
+      max_completion_tokens: this.options.maxTokens
     }
-
-    // 仕様変更: GPT-5 では temperature パラメータをサポートせず、他モデルでも任意 (デフォルト=1) のため常に送信しない。
-    // 互換性簡素化のため gpt-4o 等向けの temperature チューニング機能は削除 (要求により切り捨て)。
-
-    // GPT-5では max_completion_tokens、それ以外では max_tokens を使用
-    if (isGpt5) {
-      body.max_completion_tokens = this.options.maxTokens
-    } else {
-      body.max_tokens = this.options.maxTokens
-    }
-
-    return body
   }
 
   private parseResponse(data: any): OpenAIResponse {

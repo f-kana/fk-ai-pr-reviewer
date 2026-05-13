@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(.claude/**)",
+      "Edit(.claude/**)",
+      "MCP(playwright-mcp:*)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Edit(**/.env)",
+      "Write(**/.env)"
+    ]
+  },
+  "plansDirectory": "tmp/claude/plans"
+}
